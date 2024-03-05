@@ -1,7 +1,7 @@
 import {useRef, Suspense} from 'react';
 import {Disclosure, Listbox} from '@headlessui/react';
 import {defer, redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {useLoaderData, Await} from '@remix-run/react';
+import {useLoaderData, Await, useNavigate} from '@remix-run/react';
 import type {ShopifyAnalyticsProduct} from '@shopify/hydrogen';
 import {
   AnalyticsPageType,
@@ -235,6 +235,8 @@ export function ProductForm({
     quantity: 1,
   };
 
+  const navigate = useNavigate();
+
   return (
     <div className="grid gap-10">
       <div className="grid gap-4">
@@ -255,7 +257,17 @@ export function ProductForm({
                 <div className="flex flex-wrap items-baseline gap-4">
                   {option.values.length > 7 ? (
                     <div className="relative w-full">
-                      <Listbox>
+                      <Listbox
+                        onChange={(selectedOption) => {
+                          const value = option.values.find(
+                            (v) => v.value === selectedOption,
+                          );
+
+                          if (value) {
+                            navigate(value.to);
+                          }
+                        }}
+                      >
                         {({open}) => (
                           <>
                             <Listbox.Button
