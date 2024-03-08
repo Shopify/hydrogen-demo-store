@@ -1,0 +1,68 @@
+name: 🧪 End-to-end tests
+
+inputs:
+  url:
+    required: false
+    type: string
+  auth-bypass-token:
+    required: false
+    type: string
+
+runs:
+  using: 'composite'
+  steps:
+    - name: ⬇️ Checkout repo
+      uses: actions/checkout@v4
+
+    - name: 📥 Install dependencies
+      shell: 'bash'
+      run: npm ci
+
+    - name: 📦 Build
+      shell: 'bash'
+      run: npm run build
+
+    - name: 💾 Turbo cache
+      id: turbo-cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          node_modules/.cache/turbo
+          **/.turbo
+        key: turbo-${{ github.job }}-${{ github.ref_name }}-${{ github.sha }}
+        restore-keys: |
+          turbo-${{ github.job }}-${{ github.ref_name }}-
+
+    - name: 📄 Get installed Playwright version
+      shell: 'bash'
+      run: echo "PLAYWRIGHT_VERSION=$(npm ls @playwright/test | grep @playwright -m 1 | sed 's/.*@//')"  >> $GITHUB_ENV
+
+    - name: 💾 Cache Playwright binaries
+      uses: actions/cache@v3
+      id: playwright-cache
+      with:
+        path: |
+          ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ env.PLAYWRIGHT_VERSION }}
+
+    - name: 💽 Install Playwright Browsers (all)
+      shell: 'bash'
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      run: npx playwright install --with-deps chromium
+
+    - name: 💽 Install Playwright (only system deps)
+      shell: 'bash'
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      run: npx playwright install-deps chromium
+
+    - name: 🍄 Run Playwright tests
+      shell: 'bash'
+      run: URL=${{ inputs.url }} AUTH_BYPASS_TOKEN=${{ inputs.auth-bypass-token }} npx playwright test
+
+    - name: 🗒 Report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: playwright-report
+        path: ./playwright-report/
+        retention-days: 30
