@@ -40,17 +40,14 @@ jobs:
 
       - name: Build and Publish to Oxygen
         id: deploy
-        uses: shopify/oxygenctl-action@v4
-        with:
-          oxygen_deployment_token: ${{ secrets.OXYGEN_DEPLOYMENT_TOKEN_1000013955 }}
-          build_command: 'npm run build'
+        run: |
+          npx shopify hydrogen deploy --auth-bypass-token --token "${{ secrets.OXYGEN_DEPLOYMENT_TOKEN_1000013955 }}"
+          echo "AUTH_BYPASS_TOKEN=$(jq -r '.authBypassToken' h2_deploy_log.json)" >> $GITHUB_ENV
+          echo "DEPLOYMENT_URL=$(jq -r '.url' h2_deploy_log.json)" >> $GITHUB_ENV
 
-      # Create GitHub Deployment
-      - name: Create GitHub Deployment
-        uses: shopify/github-deployment-action@v1
-        if: always()
+      - name: Run end-to-end tests
+        id: end-to-end-tests
+        uses: ./.github/actions/end-to-end-tests
         with:
-          token: ${{ github.token }}
-          environment: 'preview'
-          preview_url: ${{ steps.deploy.outputs.url }}
-          description: ${{ github.event.head_commit.message }}
+          url: ${{ env.DEPLOYMENT_URL }}
+          auth-bypass-token: ${{ env.AUTH_BYPASS_TOKEN }}
