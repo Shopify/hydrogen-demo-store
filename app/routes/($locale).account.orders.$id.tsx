@@ -1,4 +1,3 @@
-import invariant from 'tiny-invariant';
 import clsx from 'clsx';
 import {json, redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {useLoaderData, type MetaFunction} from '@remix-run/react';
@@ -8,6 +7,7 @@ import type {OrderFragment} from 'customer-accountapi.generated';
 import {statusMessage} from '~/lib/utils';
 import {Link, Heading, PageHeader, Text} from '~/components';
 import {CUSTOMER_ORDER_QUERY} from '~/graphql/customer-account/CustomerOrderQuery';
+import type {FulfillmentStatus} from '@shopify/hydrogen/customer-account-api-types';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Order ${data?.order?.name}`}];
@@ -21,18 +21,16 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
   const queryParams = new URL(request.url).searchParams;
   const orderToken = queryParams.get('key');
 
-  invariant(orderToken, 'Order token is required');
-
   try {
-    const orderId = `gid://shopify/Order/${params.id}?key=${orderToken}`;
+    const orderId = orderToken ? `gid://shopify/Order/${params.id}?key=${orderToken}` : `gid://shopify/Order/${params.id}`;
 
     const {data, errors} = await context.customerAccount.query(
       CUSTOMER_ORDER_QUERY,
       {variables: {orderId}},
     );
 
-    if (errors?.length || !data?.order || !data?.lineItems) {
-      throw new Error('Order not found');
+    if (errors?.length || !data?.order || !data?.order?.lineItems) {
+      throw new Error('order information');
     }
 
     const order: OrderFragment = data.order;
@@ -50,7 +48,9 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
       firstDiscount?.__typename === 'PricingPercentageValue' &&
       firstDiscount?.percentage;
 
-    const fulfillmentStatus = flattenConnection(order.fulfillments)[0].status;
+    const fulfillments = flattenConnection(order.fulfillments);
+
+    const fulfillmentStatus = fulfillments.length > 0 ? fulfillments[0].status : 'OPEN' as FulfillmentStatus;
 
     return json(
       {

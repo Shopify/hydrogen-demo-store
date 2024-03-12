@@ -6,15 +6,17 @@ import {statusMessage} from '~/lib/utils';
 
 export function OrderCard({order}: {order: OrderCardFragment}) {
   if (!order?.id) return null;
+
   const [legacyOrderId, key] = order!.id!.split('/').pop()!.split('?');
   const lineItems = flattenConnection(order?.lineItems);
   const fulfillmentStatus = flattenConnection(order?.fulfillments)[0]?.status;
+  const url = key ? `/account/orders/${legacyOrderId}?${key}` : `/account/orders/${legacyOrderId}`;
 
   return (
     <li className="grid text-center border rounded">
       <Link
         className="grid items-center gap-4 p-4 md:gap-6 md:p-6 md:grid-cols-2"
-        to={`/account/orders/${legacyOrderId}?${key}`}
+        to={url}
         prefetch="intent"
       >
         {lineItems[0].image && (
