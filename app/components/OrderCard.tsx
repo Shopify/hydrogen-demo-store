@@ -10,7 +10,9 @@ export function OrderCard({order}: {order: OrderCardFragment}) {
   const [legacyOrderId, key] = order!.id!.split('/').pop()!.split('?');
   const lineItems = flattenConnection(order?.lineItems);
   const fulfillmentStatus = flattenConnection(order?.fulfillments)[0]?.status;
-  const url = key ? `/account/orders/${legacyOrderId}?${key}` : `/account/orders/${legacyOrderId}`;
+  const url = key
+    ? `/account/orders/${legacyOrderId}?${key}`
+    : `/account/orders/${legacyOrderId}`;
 
   return (
     <li className="grid text-center border rounded">

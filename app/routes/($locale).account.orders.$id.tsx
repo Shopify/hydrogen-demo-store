@@ -2,12 +2,12 @@ import clsx from 'clsx';
 import {json, redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {useLoaderData, type MetaFunction} from '@remix-run/react';
 import {Money, Image, flattenConnection} from '@shopify/hydrogen';
+import type {FulfillmentStatus} from '@shopify/hydrogen/customer-account-api-types';
 
 import type {OrderFragment} from 'customer-accountapi.generated';
 import {statusMessage} from '~/lib/utils';
 import {Link, Heading, PageHeader, Text} from '~/components';
 import {CUSTOMER_ORDER_QUERY} from '~/graphql/customer-account/CustomerOrderQuery';
-import type {FulfillmentStatus} from '@shopify/hydrogen/customer-account-api-types';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Order ${data?.order?.name}`}];
@@ -22,7 +22,9 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
   const orderToken = queryParams.get('key');
 
   try {
-    const orderId = orderToken ? `gid://shopify/Order/${params.id}?key=${orderToken}` : `gid://shopify/Order/${params.id}`;
+    const orderId = orderToken
+      ? `gid://shopify/Order/${params.id}?key=${orderToken}`
+      : `gid://shopify/Order/${params.id}`;
 
     const {data, errors} = await context.customerAccount.query(
       CUSTOMER_ORDER_QUERY,
@@ -50,7 +52,10 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
 
     const fulfillments = flattenConnection(order.fulfillments);
 
-    const fulfillmentStatus = fulfillments.length > 0 ? fulfillments[0].status : 'OPEN' as FulfillmentStatus;
+    const fulfillmentStatus =
+      fulfillments.length > 0
+        ? fulfillments[0].status
+        : ('OPEN' as FulfillmentStatus);
 
     return json(
       {
