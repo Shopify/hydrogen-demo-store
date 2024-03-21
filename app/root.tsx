@@ -23,8 +23,7 @@ import invariant from 'tiny-invariant';
 import {Layout} from '~/components';
 import {seoPayload} from '~/lib/seo.server';
 
-import favicon from '../public/favicon.svg';
-
+import favicon from './assets/favicon.svg';
 import {GenericError} from './components/GenericError';
 import {NotFound} from './components/NotFound';
 import styles from './styles/app.css?url';
