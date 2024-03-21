@@ -2,7 +2,11 @@
 /// <reference types="@shopify/remix-oxygen" />
 /// <reference types="@shopify/oxygen-workers-types" />
 
-import type {WithCache, HydrogenCart} from '@shopify/hydrogen';
+import type {
+  WithCache,
+  HydrogenCart,
+  HydrogenSessionData,
+} from '@shopify/hydrogen';
 import type {Storefront, CustomerAccount} from '~/lib/type';
 import type {AppSession} from '~/lib/session.server';
 
@@ -38,6 +42,11 @@ declare module '@shopify/remix-oxygen' {
     cart: HydrogenCart;
     env: Env;
   }
+
+  /**
+   * Declare local additions to the Remix session data.
+   */
+  interface SessionData extends HydrogenSessionData {}
 }
 
 // Needed to make this file a module.
