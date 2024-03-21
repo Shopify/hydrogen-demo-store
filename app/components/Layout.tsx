@@ -1,5 +1,5 @@
 import {useParams, Form, Await} from '@remix-run/react';
-import {useWindowScroll} from 'react-use';
+import useWindowScroll from 'react-use/esm/useWindowScroll';
 import {Disclosure} from '@headlessui/react';
 import {Suspense, useEffect, useMemo} from 'react';
 import {CartForm} from '@shopify/hydrogen';

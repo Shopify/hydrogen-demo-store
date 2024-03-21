@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import {useRef} from 'react';
-import {useScroll} from 'react-use';
+import useScroll from 'react-use/esm/useScroll';
 import {
   flattenConnection,
   CartForm,

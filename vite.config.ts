@@ -10,4 +10,9 @@ export default defineConfig({
     remix({buildDirectory: 'dist'}),
     tsconfigPaths(),
   ],
+  ssr: {
+    optimizeDeps: {
+      include: ['typographic-base/index', 'textr'],
+    },
+  },
 });
