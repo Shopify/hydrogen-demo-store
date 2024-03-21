@@ -3,6 +3,7 @@
   "private": true,
   "sideEffects": false,
   "version": "2.1.6",
+  "type": "module",
   "scripts": {
     "dev": "shopify hydrogen dev-vite --codegen",
     "build": "shopify hydrogen build-vite --codegen",
@@ -68,6 +69,5 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "type": "module"
+  }
 }
