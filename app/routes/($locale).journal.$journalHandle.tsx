@@ -11,7 +11,7 @@ import {PageHeader, Section} from '~/components';
 import {seoPayload} from '~/lib/seo.server';
 import {routeHeaders} from '~/data/cache';
 
-import styles from '../styles/custom-font.css';
+import styles from '../styles/custom-font.css?url';
 
 const BLOG_HANDLE = 'journal';
 

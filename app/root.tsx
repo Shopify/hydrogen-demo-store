@@ -11,7 +11,6 @@ import {
   Meta,
   Outlet,
   Scripts,
-  LiveReload,
   ScrollRestoration,
   useLoaderData,
   useMatches,
@@ -24,11 +23,10 @@ import invariant from 'tiny-invariant';
 import {Layout} from '~/components';
 import {seoPayload} from '~/lib/seo.server';
 
-import favicon from '../public/favicon.svg';
-
+import favicon from './assets/favicon.svg';
 import {GenericError} from './components/GenericError';
 import {NotFound} from './components/NotFound';
-import styles from './styles/app.css';
+import styles from './styles/app.css?url';
 import {DEFAULT_LOCALE, parseMenu} from './lib/utils';
 import {useAnalytics} from './hooks/useAnalytics';
 
@@ -125,7 +123,6 @@ export default function App() {
         </Layout>
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
-        <LiveReload nonce={nonce} />
       </body>
     </html>
   );
@@ -176,7 +173,6 @@ export function ErrorBoundary({error}: {error: Error}) {
         </Layout>
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
-        <LiveReload nonce={nonce} />
       </body>
     </html>
   );
