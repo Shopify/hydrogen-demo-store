@@ -97,10 +97,6 @@ export async function loader({request, context}: LoaderFunctionArgs) {
       layout,
       selectedLocale: storefront.i18n,
       cart: cart.get(),
-      analytics: {
-        shopifySalesChannel: ShopifySalesChannel.hydrogen,
-        shopId: layout.shop.id,
-      },
       seo,
     },
     {

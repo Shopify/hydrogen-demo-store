@@ -83,9 +83,6 @@ export async function action({request, context}: ActionFunctionArgs) {
       cart: cartResult,
       userErrors,
       errors,
-      analytics: {
-        cartId,
-      },
     },
     {status, headers},
   );

@@ -1,7 +1,7 @@
 import {defer, MetaArgs, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {Suspense} from 'react';
 import {Await, useLoaderData} from '@remix-run/react';
-import {AnalyticsPageType, getSeoMeta} from '@shopify/hydrogen';
+import {getSeoMeta} from '@shopify/hydrogen';
 
 import {ProductSwimlane, FeaturedCollections, Hero} from '~/components';
 import {MEDIA_FRAGMENT, PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
@@ -68,9 +68,6 @@ export async function loader({params, context}: LoaderFunctionArgs) {
         language,
       },
     }),
-    analytics: {
-      pageType: AnalyticsPageType.home,
-    },
     seo,
   });
 }

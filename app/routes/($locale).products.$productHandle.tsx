@@ -8,12 +8,10 @@ import {
 } from '@shopify/remix-oxygen';
 import {useLoaderData, Await, useNavigate} from '@remix-run/react';
 import {
-  type ShopifyAnalyticsProduct,
   UNSTABLE_Analytics as Analytics,
   getSeoMeta,
 } from '@shopify/hydrogen';
 import {
-  AnalyticsPageType,
   Money,
   ShopPayButton,
   VariantSelector,
@@ -91,15 +89,6 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
   const firstVariant = product.variants.nodes[0];
   const selectedVariant = product.selectedVariant ?? firstVariant;
 
-  const productAnalytics: ShopifyAnalyticsProduct = {
-    productGid: product.id,
-    variantGid: selectedVariant.id,
-    name: product.title,
-    variantName: selectedVariant.title,
-    brand: product.vendor,
-    price: selectedVariant.price.amount,
-  };
-
   const seo = seoPayload.product({
     product,
     selectedVariant,
@@ -112,12 +101,6 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
     shop,
     storeDomain: shop.primaryDomain.url,
     recommended,
-    analytics: {
-      pageType: AnalyticsPageType.product,
-      resourceId: product.id,
-      products: [productAnalytics],
-      totalValue: parseFloat(selectedVariant.price.amount),
-    },
     seo,
   });
 }
@@ -241,7 +224,7 @@ export function ProductForm({
 }: {
   variants: ProductVariantFragmentFragment[];
 }) {
-  const {product, analytics, storeDomain} = useLoaderData<typeof loader>();
+  const {product, storeDomain} = useLoaderData<typeof loader>();
 
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -257,11 +240,6 @@ export function ProductForm({
     selectedVariant?.price?.amount &&
     selectedVariant?.compareAtPrice?.amount &&
     selectedVariant?.price?.amount < selectedVariant?.compareAtPrice?.amount;
-
-  const productAnalytics: ShopifyAnalyticsProduct = {
-    ...analytics.products[0],
-    quantity: 1,
-  };
 
   const navigate = useNavigate();
 
@@ -390,10 +368,6 @@ export function ProductForm({
                 ]}
                 variant="primary"
                 data-test="add-to-cart"
-                analytics={{
-                  products: [productAnalytics],
-                  totalValue: parseFloat(productAnalytics.price),
-                }}
               >
                 <Text
                   as="span"

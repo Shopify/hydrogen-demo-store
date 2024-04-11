@@ -12,7 +12,6 @@ import type {
   ProductFilter,
 } from '@shopify/hydrogen/storefront-api-types';
 import {
-  AnalyticsPageType,
   Pagination,
   flattenConnection,
   getPaginationVariables,
@@ -139,11 +138,6 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
     collection,
     appliedFilters,
     collections: flattenConnection(collections),
-    analytics: {
-      pageType: AnalyticsPageType.collection,
-      collectionHandle,
-      resourceId: collection.id,
-    },
     seo,
   });
 }
