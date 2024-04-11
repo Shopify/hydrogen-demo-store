@@ -7,7 +7,8 @@ import type {
 } from '@shopify/hydrogen/storefront-api-types';
 
 import type {CollectionContentFragment} from 'storefrontapi.generated';
-import {Heading, Text, Link} from '~/components';
+import {Heading, Text} from '~/components/Text';
+import {Link} from '~/components/Link';
 
 type HeroProps = CollectionContentFragment & {
   height?: 'full';

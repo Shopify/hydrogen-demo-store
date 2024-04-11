@@ -11,7 +11,9 @@ import {
   getSeoMeta,
 } from '@shopify/hydrogen';
 
-import {PageHeader, Section, ProductCard, Grid} from '~/components';
+import {PageHeader, Section} from '~/components/Text';
+import {ProductCard} from '~/components/ProductCard';
+import {Grid} from '~/components/Grid';
 import {PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
 import {getImageLoadingPriority} from '~/lib/const';
 import {seoPayload} from '~/lib/seo.server';

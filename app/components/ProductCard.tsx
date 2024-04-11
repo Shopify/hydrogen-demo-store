@@ -3,7 +3,10 @@ import {flattenConnection, Image, Money, useMoney} from '@shopify/hydrogen';
 import type {MoneyV2, Product} from '@shopify/hydrogen/storefront-api-types';
 
 import type {ProductCardFragment} from 'storefrontapi.generated';
-import {Text, Link, AddToCartButton, Button} from '~/components';
+import {Text} from '~/components/Text';
+import {Link} from '~/components/Link';
+import {Button} from '~/components/Button';
+import {AddToCartButton} from '~/components/AddToCartButton';
 import {isDiscounted, isNewArrival} from '~/lib/utils';
 import {getProductPlaceholder} from '~/lib/placeholders';
 

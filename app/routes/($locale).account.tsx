@@ -7,28 +7,20 @@ import {
   useOutlet,
 } from '@remix-run/react';
 import {Suspense} from 'react';
-import {
-  defer,
-  redirect,
-  type LoaderFunctionArgs,
-  type AppLoadContext,
-} from '@shopify/remix-oxygen';
+import {defer, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {flattenConnection} from '@shopify/hydrogen';
 
 import type {
   CustomerDetailsFragment,
   OrderCardFragment,
 } from 'customer-accountapi.generated';
-import {
-  Button,
-  OrderCard,
-  PageHeader,
-  Text,
-  AccountDetails,
-  AccountAddressBook,
-  Modal,
-  ProductSwimlane,
-} from '~/components';
+import {PageHeader, Text} from '~/components/Text';
+import {Button} from '~/components/Button';
+import {OrderCard} from '~/components/OrderCard';
+import {AccountDetails} from '~/components/AccountDetails';
+import {AccountAddressBook} from '~/components/AccountAddressBook';
+import {Modal} from '~/components/Modal';
+import {ProductSwimlane} from '~/components/ProductSwimlane';
 import {FeaturedCollections} from '~/components/FeaturedCollections';
 import {usePrefixPathWithLocale} from '~/lib/utils';
 import {CACHE_NONE, routeHeaders} from '~/data/cache';

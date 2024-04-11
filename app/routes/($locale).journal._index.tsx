@@ -6,7 +6,9 @@ import {
 import {useLoaderData} from '@remix-run/react';
 import {flattenConnection, getSeoMeta, Image} from '@shopify/hydrogen';
 
-import {Grid, PageHeader, Section, Link} from '~/components';
+import {PageHeader, Section} from '~/components/Text';
+import {Link} from '~/components/Link';
+import {Grid} from '~/components/Grid';
 import {getImageLoadingPriority, PAGINATION_SIZE} from '~/lib/const';
 import {seoPayload} from '~/lib/seo.server';
 import {routeHeaders} from '~/data/cache';

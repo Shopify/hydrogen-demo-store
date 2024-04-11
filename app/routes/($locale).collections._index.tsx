@@ -12,7 +12,10 @@ import {
   getSeoMeta,
 } from '@shopify/hydrogen';
 
-import {Grid, Heading, PageHeader, Section, Link, Button} from '~/components';
+import {Grid} from '~/components/Grid';
+import {Heading, PageHeader, Section} from '~/components/Text';
+import {Link} from '~/components/Link';
+import {Button} from '~/components/Button';
 import {getImageLoadingPriority} from '~/lib/const';
 import {seoPayload} from '~/lib/seo.server';
 import {routeHeaders} from '~/data/cache';

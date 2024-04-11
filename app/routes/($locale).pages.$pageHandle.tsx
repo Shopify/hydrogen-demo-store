@@ -7,7 +7,7 @@ import {useLoaderData} from '@remix-run/react';
 import invariant from 'tiny-invariant';
 import {getSeoMeta} from '@shopify/hydrogen';
 
-import {PageHeader} from '~/components';
+import {PageHeader} from '~/components/Text';
 import {routeHeaders} from '~/data/cache';
 import {seoPayload} from '~/lib/seo.server';
 
