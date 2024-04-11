@@ -7,10 +7,7 @@ import {
   type LoaderFunctionArgs,
 } from '@shopify/remix-oxygen';
 import {useLoaderData, Await, useNavigate} from '@remix-run/react';
-import {
-  UNSTABLE_Analytics as Analytics,
-  getSeoMeta,
-} from '@shopify/hydrogen';
+import {UNSTABLE_Analytics as Analytics, getSeoMeta} from '@shopify/hydrogen';
 import {
   Money,
   ShopPayButton,
