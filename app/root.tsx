@@ -4,7 +4,7 @@ import {
   type LoaderFunctionArgs,
   type AppLoadContext,
   type SerializeFrom,
-  MetaArgs,
+  type MetaArgs,
 } from '@shopify/remix-oxygen';
 import {
   isRouteErrorResponse,
@@ -36,7 +36,6 @@ import {GenericError} from './components/GenericError';
 import {NotFound} from './components/NotFound';
 import styles from './styles/app.css?url';
 import {DEFAULT_LOCALE, parseMenu} from './lib/utils';
-import {useAnalytics} from './hooks/useAnalytics';
 
 // This is important to avoid re-fetching root queries on sub-navigations
 export const shouldRevalidate: ShouldRevalidateFunction = ({
@@ -120,9 +119,6 @@ export default function App() {
   const nonce = useNonce();
   const data = useLoaderData<typeof loader>();
   const locale = data.selectedLocale ?? DEFAULT_LOCALE;
-  const hasUserConsent = true;
-
-  useAnalytics(hasUserConsent);
 
   return (
     <html lang={locale.language}>
