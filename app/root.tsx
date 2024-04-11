@@ -4,6 +4,7 @@ import {
   type LoaderFunctionArgs,
   type AppLoadContext,
   type SerializeFrom,
+  MetaArgs,
 } from '@shopify/remix-oxygen';
 import {
   isRouteErrorResponse,
@@ -19,10 +20,10 @@ import {
 } from '@remix-run/react';
 import {
   ShopifySalesChannel,
-  Seo,
   useNonce,
   UNSTABLE_Analytics as Analytics,
   getShopAnalytics,
+  getSeoMeta,
 } from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
@@ -110,6 +111,10 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   );
 }
 
+export const meta = ({data}: MetaArgs<typeof loader>) => {
+  return getSeoMeta(data!.seo);
+};
+
 export default function App() {
   const nonce = useNonce();
   const data = useLoaderData<typeof loader>();
@@ -124,7 +129,6 @@ export default function App() {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="msvalidate.01" content="A352E6A0AF9A652267361BBB572B8468" />
-        <Seo />
         <Meta />
         <Links />
       </head>

@@ -1,5 +1,9 @@
 import {useEffect} from 'react';
-import {json, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {
+  json,
+  type MetaArgs,
+  type LoaderFunctionArgs,
+} from '@shopify/remix-oxygen';
 import {useLoaderData, useNavigate} from '@remix-run/react';
 import {useInView} from 'react-intersection-observer';
 import type {
@@ -13,6 +17,7 @@ import {
   flattenConnection,
   getPaginationVariables,
   UNSTABLE_Analytics as Analytics,
+  getSeoMeta,
 } from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
@@ -142,6 +147,10 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
     seo,
   });
 }
+
+export const meta = ({matches}: MetaArgs<typeof loader>) => {
+  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+};
 
 export default function Collection() {
   const {collection, collections, appliedFilters} =

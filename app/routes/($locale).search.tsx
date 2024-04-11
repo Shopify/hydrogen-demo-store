@@ -1,10 +1,15 @@
-import {defer, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {
+  defer,
+  type MetaArgs,
+  type LoaderFunctionArgs,
+} from '@shopify/remix-oxygen';
 import {Await, Form, useLoaderData} from '@remix-run/react';
 import {Suspense} from 'react';
 import {
   Pagination,
   getPaginationVariables,
   UNSTABLE_Analytics as Analytics,
+  getSeoMeta,
 } from '@shopify/hydrogen';
 
 import {
@@ -73,6 +78,10 @@ export async function loader({
       : Promise.resolve(null),
   });
 }
+
+export const meta = ({matches}: MetaArgs<typeof loader>) => {
+  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+};
 
 export default function Search() {
   const {searchTerm, products, noResultRecommendations} =
