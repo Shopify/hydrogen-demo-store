@@ -24,6 +24,7 @@ import {
   UNSTABLE_Analytics as Analytics,
   getShopAnalytics,
   getSeoMeta,
+  type SeoConfig,
 } from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
@@ -112,7 +113,7 @@ export async function loader({request, context}: LoaderFunctionArgs) {
 }
 
 export const meta = ({data}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(data!.seo);
+  return getSeoMeta(data!.seo as SeoConfig);
 };
 
 export default function App() {
