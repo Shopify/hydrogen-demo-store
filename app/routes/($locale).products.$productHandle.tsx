@@ -7,12 +7,13 @@ import {
   type LoaderFunctionArgs,
 } from '@shopify/remix-oxygen';
 import {useLoaderData, Await, useNavigate} from '@remix-run/react';
-import {UNSTABLE_Analytics as Analytics, getSeoMeta} from '@shopify/hydrogen';
 import {
+  getSeoMeta,
   Money,
   ShopPayButton,
   VariantSelector,
   getSelectedProductOptions,
+  UNSTABLE_Analytics as Analytics,
 } from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 import clsx from 'clsx';
