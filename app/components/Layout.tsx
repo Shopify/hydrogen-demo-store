@@ -5,24 +5,21 @@ import {Suspense, useEffect, useMemo} from 'react';
 import {CartForm} from '@shopify/hydrogen';
 
 import {type LayoutQuery} from 'storefrontapi.generated';
+import {Text, Heading, Section} from '~/components/Text';
+import {Link} from '~/components/Link';
+import {Cart} from '~/components/Cart';
+import {CartLoading} from '~/components/CartLoading';
+import {Input} from '~/components/Input';
+import {Drawer, useDrawer} from '~/components/Drawer';
+import {CountrySelector} from '~/components/CountrySelector';
 import {
-  Drawer,
-  useDrawer,
-  Text,
-  Input,
+  IconMenu,
+  IconCaret,
   IconLogin,
   IconAccount,
   IconBag,
   IconSearch,
-  Heading,
-  IconMenu,
-  IconCaret,
-  Section,
-  CountrySelector,
-  Cart,
-  CartLoading,
-  Link,
-} from '~/components';
+} from '~/components/Icon';
 import {
   type EnhancedMenu,
   type ChildEnhancedMenuItem,

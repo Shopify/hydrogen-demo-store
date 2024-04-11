@@ -14,7 +14,8 @@ import type {
   ProductFilter,
 } from '@shopify/hydrogen/storefront-api-types';
 
-import {Heading, IconFilters, IconCaret, IconXMark, Text} from '~/components';
+import {Heading, Text} from '~/components/Text';
+import {IconFilters, IconCaret, IconXMark} from '~/components/Icon';
 
 export type AppliedFilter = {
   label: string;

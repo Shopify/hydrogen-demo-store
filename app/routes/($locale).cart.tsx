@@ -8,7 +8,7 @@ import {
 import {CartForm, type CartQueryDataReturn} from '@shopify/hydrogen';
 
 import {isLocalPath} from '~/lib/utils';
-import {Cart} from '~/components';
+import {Cart} from '~/components/Cart';
 import {useRootLoaderData} from '~/root';
 
 export async function action({request, context}: ActionFunctionArgs) {

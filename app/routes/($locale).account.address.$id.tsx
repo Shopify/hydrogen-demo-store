@@ -15,7 +15,8 @@ import {flattenConnection} from '@shopify/hydrogen';
 import type {CustomerAddressInput} from '@shopify/hydrogen/customer-account-api-types';
 import invariant from 'tiny-invariant';
 
-import {Button, Text} from '~/components';
+import {Button} from '~/components/Button';
+import {Text} from '~/components/Text';
 import {getInputStyleClasses} from '~/lib/utils';
 import {
   UPDATE_ADDRESS_MUTATION,

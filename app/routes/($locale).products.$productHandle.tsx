@@ -17,20 +17,14 @@ import type {
   ProductQuery,
   ProductVariantFragmentFragment,
 } from 'storefrontapi.generated';
-import {
-  Heading,
-  IconCaret,
-  IconCheck,
-  IconClose,
-  ProductGallery,
-  ProductSwimlane,
-  Section,
-  Skeleton,
-  Text,
-  Link,
-  AddToCartButton,
-  Button,
-} from '~/components';
+import {Heading, Section, Text} from '~/components/Text';
+import {Link} from '~/components/Link';
+import {Button} from '~/components/Button';
+import {AddToCartButton} from '~/components/AddToCartButton';
+import {Skeleton} from '~/components/Skeleton';
+import {ProductSwimlane} from '~/components/ProductSwimlane';
+import {ProductGallery} from '~/components/ProductGallery';
+import {IconCaret, IconCheck, IconClose} from '~/components/Icon';
 import {getExcerpt} from '~/lib/utils';
 import {seoPayload} from '~/lib/seo.server';
 import type {Storefront} from '~/lib/type';
