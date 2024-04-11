@@ -1,5 +1,5 @@
 import {defineConfig} from 'vite';
-import {hydrogen, oxygen} from '@shopify/cli-hydrogen/experimental-vite';
+import {hydrogen, oxygen} from '@shopify/cli-hydrogen/vite';
 import {vitePlugin as remix} from '@remix-run/dev';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
