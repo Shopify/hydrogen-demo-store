@@ -6,7 +6,9 @@ import type {
   ProductSortKeys,
 } from '@shopify/hydrogen/storefront-api-types';
 
-import {Heading, ProductCard, Skeleton, Text} from '~/components';
+import {Heading, Text} from '~/components/Text';
+import {ProductCard} from '~/components/ProductCard';
+import {Skeleton} from '~/components/Skeleton';
 import {usePrefixPathWithLocale} from '~/lib/utils';
 
 interface FeaturedProductsProps {

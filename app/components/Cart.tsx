@@ -17,14 +17,11 @@ import type {
   CartLineUpdateInput,
 } from '@shopify/hydrogen/storefront-api-types';
 
-import {
-  Button,
-  Heading,
-  IconRemove,
-  Text,
-  Link,
-  FeaturedProducts,
-} from '~/components';
+import {Button} from '~/components/Button';
+import {Text, Heading} from '~/components/Text';
+import {Link} from '~/components/Link';
+import {IconRemove} from '~/components/Icon';
+import {FeaturedProducts} from '~/components/FeaturedProducts';
 import {getInputStyleClasses} from '~/lib/utils';
 
 type Layouts = 'page' | 'drawer';

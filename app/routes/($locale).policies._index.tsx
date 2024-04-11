@@ -2,7 +2,8 @@ import {json, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {useLoaderData} from '@remix-run/react';
 import invariant from 'tiny-invariant';
 
-import {PageHeader, Section, Heading, Link} from '~/components';
+import {PageHeader, Section, Heading} from '~/components/Text';
+import {Link} from '~/components/Link';
 import {routeHeaders} from '~/data/cache';
 import {seoPayload} from '~/lib/seo.server';
 import type {NonNullableFields} from '~/lib/type';

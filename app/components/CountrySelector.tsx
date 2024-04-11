@@ -5,7 +5,9 @@ import clsx from 'clsx';
 import type {CartBuyerIdentityInput} from '@shopify/hydrogen/storefront-api-types';
 import {CartForm} from '@shopify/hydrogen';
 
-import {Heading, Button, IconCheck} from '~/components';
+import {Button} from '~/components/Button';
+import {Heading} from '~/components/Text';
+import {IconCheck} from '~/components/Icon';
 import type {Localizations, Locale} from '~/lib/type';
 import {DEFAULT_LOCALE} from '~/lib/utils';
 import {useRootLoaderData} from '~/root';

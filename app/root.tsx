@@ -20,7 +20,7 @@ import {
 import {ShopifySalesChannel, Seo, useNonce} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
-import {Layout} from '~/components';
+import {Layout} from '~/components/Layout';
 import {seoPayload} from '~/lib/seo.server';
 
 import favicon from './assets/favicon.svg';
