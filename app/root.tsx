@@ -35,7 +35,6 @@ import {NotFound} from './components/NotFound';
 import styles from './styles/app.css?url';
 import {DEFAULT_LOCALE, parseMenu} from './lib/utils';
 import {useAnalytics} from './hooks/useAnalytics';
-import {CustomAnalytics} from './components/CustomAnalytics';
 
 // This is important to avoid re-fetching root queries on sub-navigations
 export const shouldRevalidate: ShouldRevalidateFunction = ({
