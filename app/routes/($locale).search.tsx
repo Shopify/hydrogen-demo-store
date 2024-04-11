@@ -1,7 +1,11 @@
 import {defer, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {Await, Form, useLoaderData} from '@remix-run/react';
 import {Suspense} from 'react';
-import {Pagination, getPaginationVariables} from '@shopify/hydrogen';
+import {
+  Pagination,
+  getPaginationVariables,
+  UNSTABLE_Analytics as Analytics,
+} from '@shopify/hydrogen';
 
 import {
   FeaturedCollections,
@@ -130,6 +134,7 @@ export default function Search() {
           </Pagination>
         </Section>
       )}
+      <Analytics.SearchView data={{searchTerm, searchResults: products}} />
     </>
   );
 }

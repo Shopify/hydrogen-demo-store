@@ -17,7 +17,13 @@ import {
   useRouteError,
   type ShouldRevalidateFunction,
 } from '@remix-run/react';
-import {ShopifySalesChannel, Seo, useNonce} from '@shopify/hydrogen';
+import {
+  ShopifySalesChannel,
+  Seo,
+  useNonce,
+  UNSTABLE_Analytics as Analytics,
+  getShopAnalytics,
+} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
 import {Layout} from '~/components';
@@ -29,6 +35,7 @@ import {NotFound} from './components/NotFound';
 import styles from './styles/app.css?url';
 import {DEFAULT_LOCALE, parseMenu} from './lib/utils';
 import {useAnalytics} from './hooks/useAnalytics';
+import {CustomAnalytics} from './components/CustomAnalytics';
 
 // This is important to avoid re-fetching root queries on sub-navigations
 export const shouldRevalidate: ShouldRevalidateFunction = ({
@@ -70,7 +77,7 @@ export const useRootLoaderData = () => {
 };
 
 export async function loader({request, context}: LoaderFunctionArgs) {
-  const {storefront, cart} = context;
+  const {storefront, cart, env} = context;
   const layout = await getLayoutData(context);
   const isLoggedInPromise = context.customerAccount.isLoggedIn();
 
@@ -78,6 +85,14 @@ export async function loader({request, context}: LoaderFunctionArgs) {
 
   return defer(
     {
+      shop: getShopAnalytics({
+        storefront: context.storefront,
+        publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
+      }),
+      consent: {
+        checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
+        storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
+      },
       isLoggedIn: isLoggedInPromise,
       layout,
       selectedLocale: storefront.i18n,
@@ -115,12 +130,18 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Layout
-          key={`${locale.language}-${locale.country}`}
-          layout={data.layout}
+        <Analytics.Provider
+          cart={data.cart}
+          shop={data.shop}
+          consent={data.consent}
         >
-          <Outlet />
-        </Layout>
+          <Layout
+            key={`${locale.language}-${locale.country}`}
+            layout={data.layout}
+          >
+            <Outlet />
+          </Layout>
+        </Analytics.Provider>
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
       </body>

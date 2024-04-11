@@ -2,7 +2,10 @@ import {useRef, Suspense} from 'react';
 import {Disclosure, Listbox} from '@headlessui/react';
 import {defer, redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {useLoaderData, Await, useNavigate} from '@remix-run/react';
-import type {ShopifyAnalyticsProduct} from '@shopify/hydrogen';
+import {
+  type ShopifyAnalyticsProduct,
+  UNSTABLE_Analytics as Analytics,
+} from '@shopify/hydrogen';
 import {
   AnalyticsPageType,
   Money,
@@ -204,6 +207,21 @@ export default function Product() {
           )}
         </Await>
       </Suspense>
+      <Analytics.ProductView
+        data={{
+          products: [
+            {
+              id: product.id,
+              title: product.title,
+              price: product.selectedVariant?.price.amount || '0',
+              vendor: product.vendor,
+              variantId: product.selectedVariant?.id || '',
+              variantTitle: product.selectedVariant?.title || '',
+              quantity: 1,
+            },
+          ],
+        }}
+      />
     </>
   );
 }
