@@ -16,4 +16,15 @@ export default defineConfig({
       include: ['typographic-base/index', 'textr'],
     },
   },
+  optimizeDeps: {
+    include: [
+      'clsx',
+      '@headlessui/react',
+      'typographic-base/index',
+      'react-intersection-observer',
+      'react-use/esm/useScroll',
+      'react-use/esm/useDebounce',
+      'react-use/esm/useWindowScroll',
+    ],
+  },
 });
