@@ -4,6 +4,7 @@ import {
   type LoaderFunctionArgs,
   type AppLoadContext,
   type SerializeFrom,
+  type MetaArgs,
 } from '@shopify/remix-oxygen';
 import {
   isRouteErrorResponse,
@@ -17,7 +18,14 @@ import {
   useRouteError,
   type ShouldRevalidateFunction,
 } from '@remix-run/react';
-import {ShopifySalesChannel, Seo, useNonce} from '@shopify/hydrogen';
+import {
+  ShopifySalesChannel,
+  useNonce,
+  UNSTABLE_Analytics as Analytics,
+  getShopAnalytics,
+  getSeoMeta,
+  type SeoConfig,
+} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
 import {Layout} from '~/components/Layout';
@@ -28,7 +36,6 @@ import {GenericError} from './components/GenericError';
 import {NotFound} from './components/NotFound';
 import styles from './styles/app.css?url';
 import {DEFAULT_LOCALE, parseMenu} from './lib/utils';
-import {useAnalytics} from './hooks/useAnalytics';
 
 // This is important to avoid re-fetching root queries on sub-navigations
 export const shouldRevalidate: ShouldRevalidateFunction = ({
@@ -70,7 +77,7 @@ export const useRootLoaderData = () => {
 };
 
 export async function loader({request, context}: LoaderFunctionArgs) {
-  const {storefront, cart} = context;
+  const {storefront, cart, env} = context;
   const layout = await getLayoutData(context);
   const isLoggedInPromise = context.customerAccount.isLoggedIn();
 
@@ -78,14 +85,18 @@ export async function loader({request, context}: LoaderFunctionArgs) {
 
   return defer(
     {
+      shop: getShopAnalytics({
+        storefront: context.storefront,
+        publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
+      }),
+      consent: {
+        checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
+        storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
+      },
       isLoggedIn: isLoggedInPromise,
       layout,
       selectedLocale: storefront.i18n,
       cart: cart.get(),
-      analytics: {
-        shopifySalesChannel: ShopifySalesChannel.hydrogen,
-        shopId: layout.shop.id,
-      },
       seo,
     },
     {
@@ -96,13 +107,14 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   );
 }
 
+export const meta = ({data}: MetaArgs<typeof loader>) => {
+  return getSeoMeta(data!.seo as SeoConfig);
+};
+
 export default function App() {
   const nonce = useNonce();
   const data = useLoaderData<typeof loader>();
   const locale = data.selectedLocale ?? DEFAULT_LOCALE;
-  const hasUserConsent = true;
-
-  useAnalytics(hasUserConsent);
 
   return (
     <html lang={locale.language}>
@@ -110,17 +122,22 @@ export default function App() {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="msvalidate.01" content="A352E6A0AF9A652267361BBB572B8468" />
-        <Seo />
         <Meta />
         <Links />
       </head>
       <body>
-        <Layout
-          key={`${locale.language}-${locale.country}`}
-          layout={data.layout}
+        <Analytics.Provider
+          cart={data.cart}
+          shop={data.shop}
+          consent={data.consent}
         >
-          <Outlet />
-        </Layout>
+          <Layout
+            key={`${locale.language}-${locale.country}`}
+            layout={data.layout}
+          >
+            <Outlet />
+          </Layout>
+        </Analytics.Provider>
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
       </body>

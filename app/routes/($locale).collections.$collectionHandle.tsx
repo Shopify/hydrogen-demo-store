@@ -1,5 +1,9 @@
 import {useEffect} from 'react';
-import {json, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {
+  json,
+  type MetaArgs,
+  type LoaderFunctionArgs,
+} from '@shopify/remix-oxygen';
 import {useLoaderData, useNavigate} from '@remix-run/react';
 import {useInView} from 'react-intersection-observer';
 import type {
@@ -8,10 +12,11 @@ import type {
   ProductFilter,
 } from '@shopify/hydrogen/storefront-api-types';
 import {
-  AnalyticsPageType,
   Pagination,
   flattenConnection,
   getPaginationVariables,
+  UNSTABLE_Analytics as Analytics,
+  getSeoMeta,
 } from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
@@ -128,14 +133,13 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
     collection,
     appliedFilters,
     collections: flattenConnection(collections),
-    analytics: {
-      pageType: AnalyticsPageType.collection,
-      collectionHandle,
-      resourceId: collection.id,
-    },
     seo,
   });
 }
+
+export const meta = ({matches}: MetaArgs<typeof loader>) => {
+  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+};
 
 export default function Collection() {
   const {collection, collections, appliedFilters} =
@@ -200,6 +204,14 @@ export default function Collection() {
           </Pagination>
         </SortFilter>
       </Section>
+      <Analytics.CollectionView
+        data={{
+          collection: {
+            id: collection.id,
+            handle: collection.handle,
+          },
+        }}
+      />
     </>
   );
 }

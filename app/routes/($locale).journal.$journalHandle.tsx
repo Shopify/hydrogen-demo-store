@@ -1,10 +1,11 @@
 import {
   json,
+  type MetaArgs,
   type LinksFunction,
   type LoaderFunctionArgs,
 } from '@shopify/remix-oxygen';
 import {useLoaderData} from '@remix-run/react';
-import {Image} from '@shopify/hydrogen';
+import {getSeoMeta, Image} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
 import {PageHeader, Section} from '~/components/Text';
@@ -50,6 +51,10 @@ export async function loader({request, params, context}: LoaderFunctionArgs) {
 
   return json({article, formattedDate, seo});
 }
+
+export const meta = ({matches}: MetaArgs<typeof loader>) => {
+  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+};
 
 export default function Article() {
   const {article, formattedDate} = useLoaderData<typeof loader>();

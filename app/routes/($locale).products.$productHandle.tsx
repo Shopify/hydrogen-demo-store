@@ -1,14 +1,19 @@
 import {useRef, Suspense} from 'react';
 import {Disclosure, Listbox} from '@headlessui/react';
-import {defer, redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {useLoaderData, Await, useNavigate} from '@remix-run/react';
-import type {ShopifyAnalyticsProduct} from '@shopify/hydrogen';
 import {
-  AnalyticsPageType,
+  defer,
+  type MetaArgs,
+  redirect,
+  type LoaderFunctionArgs,
+} from '@shopify/remix-oxygen';
+import {useLoaderData, Await, useNavigate} from '@remix-run/react';
+import {
+  getSeoMeta,
   Money,
   ShopPayButton,
   VariantSelector,
   getSelectedProductOptions,
+  UNSTABLE_Analytics as Analytics,
 } from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 import clsx from 'clsx';
@@ -76,15 +81,6 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
   const firstVariant = product.variants.nodes[0];
   const selectedVariant = product.selectedVariant ?? firstVariant;
 
-  const productAnalytics: ShopifyAnalyticsProduct = {
-    productGid: product.id,
-    variantGid: selectedVariant.id,
-    name: product.title,
-    variantName: selectedVariant.title,
-    brand: product.vendor,
-    price: selectedVariant.price.amount,
-  };
-
   const seo = seoPayload.product({
     product,
     selectedVariant,
@@ -97,15 +93,13 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
     shop,
     storeDomain: shop.primaryDomain.url,
     recommended,
-    analytics: {
-      pageType: AnalyticsPageType.product,
-      resourceId: product.id,
-      products: [productAnalytics],
-      totalValue: parseFloat(selectedVariant.price.amount),
-    },
     seo,
   });
 }
+
+export const meta = ({matches}: MetaArgs<typeof loader>) => {
+  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+};
 
 function redirectToFirstVariant({
   product,
@@ -198,6 +192,21 @@ export default function Product() {
           )}
         </Await>
       </Suspense>
+      <Analytics.ProductView
+        data={{
+          products: [
+            {
+              id: product.id,
+              title: product.title,
+              price: product.selectedVariant?.price.amount || '0',
+              vendor: product.vendor,
+              variantId: product.selectedVariant?.id || '',
+              variantTitle: product.selectedVariant?.title || '',
+              quantity: 1,
+            },
+          ],
+        }}
+      />
     </>
   );
 }
@@ -207,7 +216,7 @@ export function ProductForm({
 }: {
   variants: ProductVariantFragmentFragment[];
 }) {
-  const {product, analytics, storeDomain} = useLoaderData<typeof loader>();
+  const {product, storeDomain} = useLoaderData<typeof loader>();
 
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -223,11 +232,6 @@ export function ProductForm({
     selectedVariant?.price?.amount &&
     selectedVariant?.compareAtPrice?.amount &&
     selectedVariant?.price?.amount < selectedVariant?.compareAtPrice?.amount;
-
-  const productAnalytics: ShopifyAnalyticsProduct = {
-    ...analytics.products[0],
-    quantity: 1,
-  };
 
   const navigate = useNavigate();
 
@@ -356,10 +360,6 @@ export function ProductForm({
                 ]}
                 variant="primary"
                 data-test="add-to-cart"
-                analytics={{
-                  products: [productAnalytics],
-                  totalValue: parseFloat(productAnalytics.price),
-                }}
               >
                 <Text
                   as="span"

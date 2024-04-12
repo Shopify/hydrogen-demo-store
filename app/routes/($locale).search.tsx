@@ -1,7 +1,16 @@
-import {defer, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {
+  defer,
+  type MetaArgs,
+  type LoaderFunctionArgs,
+} from '@shopify/remix-oxygen';
 import {Await, Form, useLoaderData} from '@remix-run/react';
 import {Suspense} from 'react';
-import {Pagination, getPaginationVariables} from '@shopify/hydrogen';
+import {
+  Pagination,
+  getPaginationVariables,
+  UNSTABLE_Analytics as Analytics,
+  getSeoMeta,
+} from '@shopify/hydrogen';
 
 import {Heading, PageHeader, Section, Text} from '~/components/Text';
 import {Input} from '~/components/Input';
@@ -65,6 +74,10 @@ export async function loader({
   });
 }
 
+export const meta = ({matches}: MetaArgs<typeof loader>) => {
+  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+};
+
 export default function Search() {
   const {searchTerm, products, noResultRecommendations} =
     useLoaderData<typeof loader>();
@@ -125,6 +138,7 @@ export default function Search() {
           </Pagination>
         </Section>
       )}
+      <Analytics.SearchView data={{searchTerm, searchResults: products}} />
     </>
   );
 }

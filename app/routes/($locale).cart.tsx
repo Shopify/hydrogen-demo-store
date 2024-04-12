@@ -5,7 +5,11 @@ import {
   type ActionFunctionArgs,
   json,
 } from '@shopify/remix-oxygen';
-import {CartForm, type CartQueryDataReturn} from '@shopify/hydrogen';
+import {
+  CartForm,
+  type CartQueryDataReturn,
+  UNSTABLE_Analytics as Analytics,
+} from '@shopify/hydrogen';
 
 import {isLocalPath} from '~/lib/utils';
 import {Cart} from '~/components/Cart';
@@ -79,9 +83,6 @@ export async function action({request, context}: ActionFunctionArgs) {
       cart: cartResult,
       userErrors,
       errors,
-      analytics: {
-        cartId,
-      },
     },
     {status, headers},
   );
@@ -96,10 +97,13 @@ export default function CartRoute() {
   const rootData = useRootLoaderData();
   // @todo: finish on a separate PR
   return (
-    <div className="grid w-full gap-8 p-6 py-8 md:p-8 lg:p-12 justify-items-start">
-      <Await resolve={rootData?.cart}>
-        {(cart) => <Cart layout="page" cart={cart} />}
-      </Await>
-    </div>
+    <>
+      <div className="grid w-full gap-8 p-6 py-8 md:p-8 lg:p-12 justify-items-start">
+        <Await resolve={rootData?.cart}>
+          {(cart) => <Cart layout="page" cart={cart} />}
+        </Await>
+      </div>
+      <Analytics.CartView />
+    </>
   );
 }

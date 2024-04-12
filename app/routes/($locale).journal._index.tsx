@@ -1,6 +1,10 @@
-import {json, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {
+  json,
+  type MetaArgs,
+  type LoaderFunctionArgs,
+} from '@shopify/remix-oxygen';
 import {useLoaderData} from '@remix-run/react';
-import {flattenConnection, Image} from '@shopify/hydrogen';
+import {flattenConnection, getSeoMeta, Image} from '@shopify/hydrogen';
 
 import {PageHeader, Section} from '~/components/Text';
 import {Link} from '~/components/Link';
@@ -46,6 +50,10 @@ export const loader = async ({
   const seo = seoPayload.blog({blog, url: request.url});
 
   return json({articles, seo});
+};
+
+export const meta = ({matches}: MetaArgs<typeof loader>) => {
+  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
 };
 
 export default function Journals() {

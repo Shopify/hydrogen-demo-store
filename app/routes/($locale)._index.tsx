@@ -1,7 +1,11 @@
-import {defer, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {
+  defer,
+  type MetaArgs,
+  type LoaderFunctionArgs,
+} from '@shopify/remix-oxygen';
 import {Suspense} from 'react';
 import {Await, useLoaderData} from '@remix-run/react';
-import {AnalyticsPageType} from '@shopify/hydrogen';
+import {getSeoMeta} from '@shopify/hydrogen';
 
 import {Hero} from '~/components/Hero';
 import {FeaturedCollections} from '~/components/FeaturedCollections';
@@ -70,12 +74,13 @@ export async function loader({params, context}: LoaderFunctionArgs) {
         language,
       },
     }),
-    analytics: {
-      pageType: AnalyticsPageType.home,
-    },
     seo,
   });
 }
+
+export const meta = ({matches}: MetaArgs<typeof loader>) => {
+  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+};
 
 export default function Homepage() {
   const {

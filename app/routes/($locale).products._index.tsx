@@ -1,7 +1,15 @@
-import {json, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {
+  json,
+  type MetaArgs,
+  type LoaderFunctionArgs,
+} from '@shopify/remix-oxygen';
 import {useLoaderData} from '@remix-run/react';
 import invariant from 'tiny-invariant';
-import {Pagination, getPaginationVariables} from '@shopify/hydrogen';
+import {
+  Pagination,
+  getPaginationVariables,
+  getSeoMeta,
+} from '@shopify/hydrogen';
 
 import {PageHeader, Section} from '~/components/Text';
 import {ProductCard} from '~/components/ProductCard';
@@ -54,6 +62,10 @@ export async function loader({
     seo,
   });
 }
+
+export const meta = ({matches}: MetaArgs<typeof loader>) => {
+  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+};
 
 export default function AllProducts() {
   const {products} = useLoaderData<typeof loader>();

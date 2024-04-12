@@ -219,6 +219,17 @@ export type CollectionContentFragment = Pick<
               Pick<StorefrontAPI.Image, 'url'>
             >;
           })
+      | ({__typename: 'Model3d'} & Pick<
+          StorefrontAPI.Model3d,
+          'id' | 'mediaContentType' | 'alt'
+        > & {
+            sources: Array<
+              Pick<StorefrontAPI.Model3dSource, 'mimeType' | 'url'>
+            >;
+            previewImage?: StorefrontAPI.Maybe<
+              Pick<StorefrontAPI.Image, 'url'>
+            >;
+          })
       | ({__typename: 'Video'} & Pick<
           StorefrontAPI.Video,
           'id' | 'mediaContentType' | 'alt'
@@ -238,6 +249,17 @@ export type CollectionContentFragment = Pick<
         > & {
             image?: StorefrontAPI.Maybe<
               Pick<StorefrontAPI.Image, 'id' | 'url' | 'width' | 'height'>
+            >;
+            previewImage?: StorefrontAPI.Maybe<
+              Pick<StorefrontAPI.Image, 'url'>
+            >;
+          })
+      | ({__typename: 'Model3d'} & Pick<
+          StorefrontAPI.Model3d,
+          'id' | 'mediaContentType' | 'alt'
+        > & {
+            sources: Array<
+              Pick<StorefrontAPI.Model3dSource, 'mimeType' | 'url'>
             >;
             previewImage?: StorefrontAPI.Maybe<
               Pick<StorefrontAPI.Image, 'url'>
@@ -284,6 +306,17 @@ export type SeoCollectionContentQuery = {
                   Pick<StorefrontAPI.Image, 'url'>
                 >;
               })
+          | ({__typename: 'Model3d'} & Pick<
+              StorefrontAPI.Model3d,
+              'id' | 'mediaContentType' | 'alt'
+            > & {
+                sources: Array<
+                  Pick<StorefrontAPI.Model3dSource, 'mimeType' | 'url'>
+                >;
+                previewImage?: StorefrontAPI.Maybe<
+                  Pick<StorefrontAPI.Image, 'url'>
+                >;
+              })
           | ({__typename: 'Video'} & Pick<
               StorefrontAPI.Video,
               'id' | 'mediaContentType' | 'alt'
@@ -305,6 +338,17 @@ export type SeoCollectionContentQuery = {
             > & {
                 image?: StorefrontAPI.Maybe<
                   Pick<StorefrontAPI.Image, 'id' | 'url' | 'width' | 'height'>
+                >;
+                previewImage?: StorefrontAPI.Maybe<
+                  Pick<StorefrontAPI.Image, 'url'>
+                >;
+              })
+          | ({__typename: 'Model3d'} & Pick<
+              StorefrontAPI.Model3d,
+              'id' | 'mediaContentType' | 'alt'
+            > & {
+                sources: Array<
+                  Pick<StorefrontAPI.Model3dSource, 'mimeType' | 'url'>
                 >;
                 previewImage?: StorefrontAPI.Maybe<
                   Pick<StorefrontAPI.Image, 'url'>
@@ -356,6 +400,17 @@ export type HeroCollectionContentQuery = {
                   Pick<StorefrontAPI.Image, 'url'>
                 >;
               })
+          | ({__typename: 'Model3d'} & Pick<
+              StorefrontAPI.Model3d,
+              'id' | 'mediaContentType' | 'alt'
+            > & {
+                sources: Array<
+                  Pick<StorefrontAPI.Model3dSource, 'mimeType' | 'url'>
+                >;
+                previewImage?: StorefrontAPI.Maybe<
+                  Pick<StorefrontAPI.Image, 'url'>
+                >;
+              })
           | ({__typename: 'Video'} & Pick<
               StorefrontAPI.Video,
               'id' | 'mediaContentType' | 'alt'
@@ -377,6 +432,17 @@ export type HeroCollectionContentQuery = {
             > & {
                 image?: StorefrontAPI.Maybe<
                   Pick<StorefrontAPI.Image, 'id' | 'url' | 'width' | 'height'>
+                >;
+                previewImage?: StorefrontAPI.Maybe<
+                  Pick<StorefrontAPI.Image, 'url'>
+                >;
+              })
+          | ({__typename: 'Model3d'} & Pick<
+              StorefrontAPI.Model3d,
+              'id' | 'mediaContentType' | 'alt'
+            > & {
+                sources: Array<
+                  Pick<StorefrontAPI.Model3dSource, 'mimeType' | 'url'>
                 >;
                 previewImage?: StorefrontAPI.Maybe<
                   Pick<StorefrontAPI.Image, 'url'>

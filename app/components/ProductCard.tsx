@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import type {ShopifyAnalyticsProduct} from '@shopify/hydrogen';
 import {flattenConnection, Image, Money, useMoney} from '@shopify/hydrogen';
 import type {MoneyV2, Product} from '@shopify/hydrogen/storefront-api-types';
 
@@ -45,16 +44,6 @@ export function ProductCard({
   } else if (isNewArrival(product.publishedAt)) {
     cardLabel = 'New';
   }
-
-  const productAnalytics: ShopifyAnalyticsProduct = {
-    productGid: product.id,
-    variantGid: firstVariant.id,
-    name: product.title,
-    variantName: firstVariant.title,
-    brand: product.vendor,
-    price: firstVariant.price.amount,
-    quantity: 1,
-  };
 
   return (
     <div className="flex flex-col gap-2">
@@ -114,10 +103,6 @@ export function ProductCard({
           ]}
           variant="secondary"
           className="mt-2"
-          analytics={{
-            products: [productAnalytics],
-            totalValue: parseFloat(productAnalytics.price),
-          }}
         >
           <Text as="span" className="flex items-center justify-center gap-2">
             Add to Cart
