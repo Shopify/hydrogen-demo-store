@@ -5,7 +5,7 @@ import {
   type LinkProps as RemixLinkProps,
 } from '@remix-run/react';
 
-import {useRootLoaderData} from '~/root';
+import {useRootLoaderData} from '~/hooks/useRootLoaderData';
 
 type LinkProps = Omit<RemixLinkProps, 'className'> & {
   className?: RemixNavLinkProps['className'] | RemixLinkProps['className'];

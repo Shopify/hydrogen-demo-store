@@ -3,7 +3,6 @@ import {
   type LinksFunction,
   type LoaderFunctionArgs,
   type AppLoadContext,
-  type SerializeFrom,
   type MetaArgs,
 } from '@shopify/remix-oxygen';
 import {
@@ -14,12 +13,10 @@ import {
   Scripts,
   ScrollRestoration,
   useLoaderData,
-  useMatches,
   useRouteError,
   type ShouldRevalidateFunction,
 } from '@remix-run/react';
 import {
-  ShopifySalesChannel,
   useNonce,
   UNSTABLE_Analytics as Analytics,
   getShopAnalytics,
@@ -69,11 +66,6 @@ export const links: LinksFunction = () => {
     },
     {rel: 'icon', type: 'image/svg+xml', href: favicon},
   ];
-};
-
-export const useRootLoaderData = () => {
-  const [root] = useMatches();
-  return root?.data as SerializeFrom<typeof loader>;
 };
 
 export async function loader({request, context}: LoaderFunctionArgs) {
@@ -148,7 +140,7 @@ export default function App() {
 export function ErrorBoundary({error}: {error: Error}) {
   const nonce = useNonce();
   const routeError = useRouteError();
-  const rootData = useRootLoaderData();
+  const rootData = useLoaderData<typeof loader>();
   const locale = rootData?.selectedLocale ?? DEFAULT_LOCALE;
   const isRouteError = isRouteErrorResponse(routeError);
 

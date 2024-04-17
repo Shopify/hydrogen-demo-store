@@ -13,7 +13,7 @@ import {
 
 import {isLocalPath} from '~/lib/utils';
 import {Cart} from '~/components/Cart';
-import {useRootLoaderData} from '~/root';
+import {useRootLoaderData} from '~/hooks/useRootLoaderData';
 
 export async function action({request, context}: ActionFunctionArgs) {
   const {cart} = context;
