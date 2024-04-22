@@ -3,7 +3,7 @@ import {
   type MetaArgs,
   type LoaderFunctionArgs,
 } from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
+import {PrefetchPageLinks, useLoaderData} from '@remix-run/react';
 import invariant from 'tiny-invariant';
 import {
   Pagination,
@@ -72,6 +72,8 @@ export default function AllProducts() {
 
   return (
     <>
+      <PrefetchPageLinks page="/products/snowboard" />
+      <PrefetchPageLinks page="/" />
       <PageHeader heading="All Products" variant="allCollections" />
       <Section>
         <Pagination connection={products}>

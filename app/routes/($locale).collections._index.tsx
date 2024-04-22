@@ -3,7 +3,7 @@ import {
   type MetaArgs,
   type LoaderFunctionArgs,
 } from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
+import {PrefetchPageLinks, useLoaderData} from '@remix-run/react';
 import type {Collection} from '@shopify/hydrogen/storefront-api-types';
 import {
   Image,
@@ -54,6 +54,7 @@ export default function Collections() {
 
   return (
     <>
+      <PrefetchPageLinks page="/collections/freestyle" />
       <PageHeader heading="Collections" />
       <Section>
         <Pagination connection={collections}>
