@@ -19,11 +19,11 @@ export default function MakeRequests() {
 
   useEffect(() => {
     if (!requestMade.current) {
-      performance.measure('oxygen');
+      const oxygenTime = performance.now();
       fetch('/resource')
         .then((resp) => resp.json())
         .then(() => {
-          setOxygen(performance.measure('oxygen'));
+          setOxygen({duration: performance.now() - oxygenTime});
         });
 
       const client = createStorefrontApiClient({
@@ -32,7 +32,7 @@ export default function MakeRequests() {
         publicAccessToken: data.publicAccessToken,
       });
 
-      performance.measure('direct');
+      const directTime = performance.now();
 
       client
         .request(
@@ -44,8 +44,9 @@ export default function MakeRequests() {
       `,
         )
         .then(({data, errors, extensions}) => {
-          const result = performance.measure('direct');
-          setDirect(result);
+          setDirect({
+            duration: performance.now() - directTime,
+          });
         });
       requestMade.current = true;
     }
