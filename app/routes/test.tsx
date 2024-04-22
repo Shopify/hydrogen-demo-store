@@ -54,9 +54,13 @@ export default function MakeRequests() {
   return (
     <div>
       <h1>Performance metrics:</h1>
+      <br />
       <h2>Oxygen timing</h2>
+      <p>Making a request to oxygen, then a sub-request to the SFAPI</p>
       <p>{oxygen.duration}</p>
+      <br />
       <h2>SFAPI Direct timing</h2>
+      <p>Making a request directly from the browser to the SFAPI</p>
       <p>{direct.duration}</p>
     </div>
   );
