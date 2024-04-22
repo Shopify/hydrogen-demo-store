@@ -31,6 +31,7 @@
     "@shopify/hydrogen-codegen": "^0.3.0",
     "@shopify/mini-oxygen": "^3.0.0",
     "@shopify/remix-oxygen": "^2.0.4",
+    "@shopify/storefront-api-client": "^0.3.3",
     "clsx": "^1.2.1",
     "cross-env": "^7.0.3",
     "graphql": "^16.6.0",
