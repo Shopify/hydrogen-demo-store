@@ -53,7 +53,16 @@ export default function MakeRequests() {
 
   return (
     <div>
-      <h1>Performance metrics:</h1>
+      <h1>Performance metrics for the following query:</h1>
+      <pre
+        dangerouslySetInnerHTML={{
+          __html: `{
+  shop {
+    name
+  }
+}`,
+        }}
+      ></pre>
       <br />
       <h2>Oxygen timing</h2>
       <p>Making a request to oxygen, then a sub-request to the SFAPI</p>
