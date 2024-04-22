@@ -13,47 +13,46 @@ export async function loader({context}: LoaderFunctionArgs) {
 export default function MakeRequests() {
   const [direct, setDirect] = useState({time: null});
   const [oxygen, setOxygen] = useState({time: null});
+  const [refresh, setRefresh] = useState(false);
   const requestMade = useRef(false);
 
   const data = useLoaderData<typeof loader>();
 
   useEffect(() => {
-    if (!requestMade.current) {
-      const oxygenTime = performance.now();
-      fetch('/resource')
-        .then((resp) => resp.json())
-        .then(() => {
-          setOxygen({duration: performance.now() - oxygenTime});
-        });
-
-      const client = createStorefrontApiClient({
-        storeDomain: data.storeDomain,
-        apiVersion: '2023-10',
-        publicAccessToken: data.publicAccessToken,
+    const oxygenTime = performance.now();
+    fetch('/resource')
+      .then((resp) => resp.json())
+      .then(() => {
+        setOxygen({duration: performance.now() - oxygenTime});
       });
 
-      const directTime = performance.now();
+    const client = createStorefrontApiClient({
+      storeDomain: data.storeDomain,
+      apiVersion: '2023-10',
+      publicAccessToken: data.publicAccessToken,
+    });
 
-      client
-        .request(
-          `{
+    const directTime = performance.now();
+
+    client
+      .request(
+        `{
         shop {
           name
         }
       }
       `,
-        )
-        .then(({data, errors, extensions}) => {
-          setDirect({
-            duration: performance.now() - directTime,
-          });
+      )
+      .then(({data, errors, extensions}) => {
+        setDirect({
+          duration: performance.now() - directTime,
         });
-      requestMade.current = true;
-    }
-  }, []);
+      });
+    requestMade.current = true;
+  }, [refresh]);
 
   return (
-    <div>
+    <div style={{marginLeft: 20}}>
       <h1>Performance metrics for the following query:</h1>
       <pre
         dangerouslySetInnerHTML={{
@@ -72,6 +71,8 @@ export default function MakeRequests() {
       <h2>SFAPI Direct timing</h2>
       <p>Making a request directly from the browser to the SFAPI</p>
       <p>{direct.duration}</p>
+      <br />
+      <button onClick={() => setRefresh(!refresh)}>Refresh</button>
     </div>
   );
 }
