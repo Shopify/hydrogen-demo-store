@@ -23,15 +23,22 @@ export default function MakeRequests() {
     const oxygenTime = performance.now();
     fetch('/resource')
       .then((resp) => resp.json())
-      .then(() => {
-        setOxygen({duration: performance.now() - oxygenTime});
+      .then((resp) => {
+        setOxygen({
+          duration: performance.now() - oxygenTime,
+          serverTime: resp.time,
+        });
       });
 
     const oxygenCacheTime = performance.now();
     fetch('/resource-cached')
       .then((resp) => resp.json())
-      .then(() => {
-        setOxygenCache({duration: performance.now() - oxygenCacheTime});
+      .then((resp) => {
+        debugger;
+        setOxygenCache({
+          duration: performance.now() - oxygenCacheTime,
+          serverTime: resp.time,
+        });
       });
 
     const client = createStorefrontApiClient({
@@ -72,19 +79,35 @@ export default function MakeRequests() {
         }}
       ></pre>
       <br />
-      <h2>Oxygen timing</h2>
-      <p>Making a request to oxygen, then a sub-request to the SFAPI</p>
-      <p>{oxygen.duration}</p>
-      <br />
-      <h2>Oxygen w/cache</h2>
-      <p>
-        Making a request to oxygen, then a sub-request (with cache) to the SFAPI
-      </p>
-      <p>{oxygenCache.duration}</p>
-      <br />
-      <h2>SFAPI Direct timing</h2>
-      <p>Making a request directly from the browser to the SFAPI</p>
-      <p>{direct.duration}</p>
+      <table>
+        <tr>
+          <td>
+            <b>Time to make a request from the browser to oxygen to SFAPI</b>
+          </td>
+          <td>{oxygen.duration}</td>
+        </tr>
+        <tr>
+          <td>
+            <b>Time to make a request from oxygen to the SFAPI</b>
+          </td>
+          <td>{oxygen.serverTime}</td>
+        </tr>
+        <tr>
+          <td>
+            <b>
+              Time to make a request from the browser to Oxygen with cached
+              request to SFAPI
+            </b>
+          </td>
+          <td>{oxygenCache.duration}</td>
+        </tr>
+        <tr>
+          <td>
+            <b>Time to query the cloudflare caches API</b>
+          </td>
+          <td>{oxygenCache.serverTime}</td>
+        </tr>
+      </table>
       <br />
       <button onClick={() => setRefresh(!refresh)}>Refresh</button>
     </div>
