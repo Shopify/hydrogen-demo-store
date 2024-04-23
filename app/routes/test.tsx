@@ -81,35 +81,41 @@ export default function MakeRequests() {
       <br />
       <table>
         <tr>
+          <td>Time to make a request from the browser to oxygen to SFAPI</td>
           <td>
-            <b>Time to make a request from the browser to oxygen to SFAPI</b>
+            <b>{oxygen.duration}</b>
           </td>
-          <td>{oxygen.duration}</td>
+        </tr>
+        <tr>
+          <td>Time to make a request from oxygen to the SFAPI</td>
+          <td>
+            <b>{oxygen.serverTime}</b>
+          </td>
         </tr>
         <tr>
           <td>
-            <b>Time to make a request from oxygen to the SFAPI</b>
+            Time to make a request from the browser to Oxygen with cached
+            request to SFAPI
           </td>
-          <td>{oxygen.serverTime}</td>
+          <td>
+            <b>{oxygenCache.duration}</b>
+          </td>
         </tr>
         <tr>
+          <td>Time to query the cloudflare caches API</td>
           <td>
-            <b>
-              Time to make a request from the browser to Oxygen with cached
-              request to SFAPI
-            </b>
+            <b>{oxygenCache.serverTime}</b>
           </td>
-          <td>{oxygenCache.duration}</td>
-        </tr>
-        <tr>
-          <td>
-            <b>Time to query the cloudflare caches API</b>
-          </td>
-          <td>{oxygenCache.serverTime}</td>
         </tr>
       </table>
       <br />
-      <button onClick={() => setRefresh(!refresh)}>Refresh</button>
+      <button
+        className="text-blue-800"
+        style={{fontWeight: 'bold'}}
+        onClick={() => setRefresh(!refresh)}
+      >
+        Refresh
+      </button>
     </div>
   );
 }
