@@ -11,9 +11,9 @@ export async function loader({context}: LoaderFunctionArgs) {
 }
 
 export default function MakeRequests() {
-  const [direct, setDirect] = useState({time: null});
-  const [oxygen, setOxygen] = useState({time: null});
-  const [oxygenCache, setOxygenCache] = useState({time: null});
+  const [direct, setDirect] = useState([]);
+  const [oxygen, setOxygen] = useState([]);
+  const [oxygenCache, setOxygenCache] = useState([]);
   const [refresh, setRefresh] = useState(false);
   const requestMade = useRef(false);
 
@@ -24,21 +24,26 @@ export default function MakeRequests() {
     fetch('/resource')
       .then((resp) => resp.json())
       .then((resp) => {
-        setOxygen({
-          duration: performance.now() - oxygenTime,
-          serverTime: resp.time,
-        });
+        setOxygen([
+          ...oxygen,
+          {
+            duration: performance.now() - oxygenTime,
+            serverTime: resp.time,
+          },
+        ]);
       });
 
     const oxygenCacheTime = performance.now();
     fetch('/resource-cached')
       .then((resp) => resp.json())
       .then((resp) => {
-        debugger;
-        setOxygenCache({
-          duration: performance.now() - oxygenCacheTime,
-          serverTime: resp.time,
-        });
+        setOxygenCache([
+          ...oxygenCache,
+          {
+            duration: performance.now() - oxygenCacheTime,
+            serverTime: resp.time,
+          },
+        ]);
       });
 
     const client = createStorefrontApiClient({
@@ -59,9 +64,12 @@ export default function MakeRequests() {
       `,
       )
       .then(({data, errors, extensions}) => {
-        setDirect({
-          duration: performance.now() - directTime,
-        });
+        setDirect([
+          ...direct,
+          {
+            duration: performance.now() - directTime,
+          },
+        ]);
       });
     requestMade.current = true;
   }, [refresh]);
@@ -81,15 +89,32 @@ export default function MakeRequests() {
       <br />
       <table>
         <tr>
+          <td></td>
+          <td>Time (ms)</td>
+          <td>Aggregate time (ms)</td>
+        </tr>
+        <tr>
           <td>Time to make a request from the browser to oxygen to SFAPI</td>
           <td>
-            <b>{oxygen.duration}</b>
+            <b>{oxygen[oxygen.length - 1]?.duration}</b>
+          </td>
+          <td>
+            <b>
+              {oxygen.reduce((acc, val) => val.duration + acc, 0) /
+                direct.length}
+            </b>
           </td>
         </tr>
         <tr>
           <td>Time to make a request from oxygen to the SFAPI</td>
           <td>
-            <b>{oxygen.serverTime}</b>
+            <b>{oxygen[oxygen.length - 1]?.serverTime}</b>
+          </td>
+          <td>
+            <b>
+              {oxygen.reduce((acc, val) => val.serverTime + acc, 0) /
+                direct.length}
+            </b>
           </td>
         </tr>
         <tr>
@@ -98,13 +123,37 @@ export default function MakeRequests() {
             request to SFAPI
           </td>
           <td>
-            <b>{oxygenCache.duration}</b>
+            <b>{oxygenCache[oxygenCache.length - 1]?.duration}</b>
+          </td>
+          <td>
+            <b>
+              {oxygenCache.reduce((acc, val) => val.duration + acc, 0) /
+                direct.length}
+            </b>
           </td>
         </tr>
         <tr>
           <td>Time to query the cloudflare caches API</td>
           <td>
-            <b>{oxygenCache.serverTime}</b>
+            <b>{oxygenCache[oxygenCache.length - 1]?.serverTime}</b>
+          </td>
+          <td>
+            <b>
+              {oxygenCache.reduce((acc, val) => val.serverTime + acc, 0) /
+                direct.length}
+            </b>
+          </td>
+        </tr>
+        <tr>
+          <td>Time to query the SFAPI directly from the browser</td>
+          <td>
+            <b>{direct[direct.length - 1]?.duration}</b>
+          </td>
+          <td>
+            <b>
+              {direct.reduce((acc, val) => val.duration + acc, 0) /
+                direct.length}
+            </b>
           </td>
         </tr>
       </table>
