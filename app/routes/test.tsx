@@ -13,6 +13,7 @@ export async function loader({context}: LoaderFunctionArgs) {
 export default function MakeRequests() {
   const [direct, setDirect] = useState({time: null});
   const [oxygen, setOxygen] = useState({time: null});
+  const [oxygenCache, setOxygenCache] = useState({time: null});
   const [refresh, setRefresh] = useState(false);
   const requestMade = useRef(false);
 
@@ -24,6 +25,13 @@ export default function MakeRequests() {
       .then((resp) => resp.json())
       .then(() => {
         setOxygen({duration: performance.now() - oxygenTime});
+      });
+
+    const oxygenCacheTime = performance.now();
+    fetch('/resource-cached')
+      .then((resp) => resp.json())
+      .then(() => {
+        setOxygenCache({duration: performance.now() - oxygenCacheTime});
       });
 
     const client = createStorefrontApiClient({
@@ -67,6 +75,12 @@ export default function MakeRequests() {
       <h2>Oxygen timing</h2>
       <p>Making a request to oxygen, then a sub-request to the SFAPI</p>
       <p>{oxygen.duration}</p>
+      <br />
+      <h2>Oxygen w/cache</h2>
+      <p>
+        Making a request to oxygen, then a sub-request (with cache) to the SFAPI
+      </p>
+      <p>{oxygenCache.duration}</p>
       <br />
       <h2>SFAPI Direct timing</h2>
       <p>Making a request directly from the browser to the SFAPI</p>
