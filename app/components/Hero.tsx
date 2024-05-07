@@ -31,7 +31,7 @@ export function Hero({
   top,
 }: HeroProps) {
   return (
-    <Link to={`/collections/${handle}`}>
+    <Link to={`/collections/${handle}`} prefetch="viewport">
       <section
         className={clsx(
           'relative justify-end flex flex-col w-full',

@@ -50,7 +50,7 @@ export function ProductCard({
       <Link
         onClick={onClick}
         to={`/products/${product.handle}`}
-        prefetch="intent"
+        prefetch="viewport"
       >
         <div className={clsx('grid gap-4', className)}>
           <div className="card-image aspect-[4/5] bg-primary/5">

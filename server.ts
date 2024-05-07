@@ -67,6 +67,7 @@ export default {
 
       const cart = createCartHandler({
         storefront,
+        customerAccount,
         getCartId: cartGetIdDefault(request.headers),
         setCartId: cartSetIdDefault(),
       });
