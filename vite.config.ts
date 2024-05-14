@@ -13,14 +13,14 @@ export default defineConfig({
   ],
   ssr: {
     optimizeDeps: {
-      include: ['typographic-base/index', 'textr'],
+      include: ['typographic-base'],
     },
   },
   optimizeDeps: {
     include: [
       'clsx',
       '@headlessui/react',
-      'typographic-base/index',
+      'typographic-base',
       'react-intersection-observer',
       'react-use/esm/useScroll',
       'react-use/esm/useDebounce',
