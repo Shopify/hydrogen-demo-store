@@ -18,10 +18,7 @@ import {useRootLoaderData} from '~/hooks/useRootLoaderData';
 export async function action({request, context}: ActionFunctionArgs) {
   const {cart} = context;
 
-  const [formData, customerAccessToken] = await Promise.all([
-    request.formData(),
-    context.customerAccount.getAccessToken(),
-  ]);
+  const formData = await request.formData();
 
   const {action, inputs} = CartForm.getFormInput(formData);
   invariant(action, 'No cartAction defined');
@@ -55,7 +52,6 @@ export async function action({request, context}: ActionFunctionArgs) {
     case CartForm.ACTIONS.BuyerIdentityUpdate:
       result = await cart.updateBuyerIdentity({
         ...inputs.buyerIdentity,
-        customerAccessToken,
       });
       break;
     default:
