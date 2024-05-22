@@ -26,7 +26,7 @@
     "@remix-run/react": "^2.8.0",
     "@remix-run/server-runtime": "^2.8.0",
     "@shopify/cli": "^3.59.2",
-    "@shopify/cli-hydrogen": "0.0.0-next-9bce950-20240522200724",
+    "@shopify/cli-hydrogen": "8.0.4",
     "@shopify/hydrogen": "0.0.0-next-9bce950-20240522200724",
     "@shopify/hydrogen-codegen": "0.0.0-next-9bce950-20240522200724",
     "@shopify/mini-oxygen": "0.0.0-next-9bce950-20240522200724",
