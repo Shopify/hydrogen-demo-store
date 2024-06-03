@@ -20,6 +20,8 @@ export const headers = routeHeaders;
 export async function loader({params, context}: LoaderFunctionArgs) {
   const {language, country} = context.storefront.i18n;
 
+  console.error(new Error('this is an error'));
+
   if (
     params.locale &&
     params.locale.toLowerCase() !== `${language}-${country}`.toLowerCase()
