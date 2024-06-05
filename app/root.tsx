@@ -12,7 +12,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLoaderData,
+  useRouteLoaderData,
   useRouteError,
   type ShouldRevalidateFunction,
 } from '@remix-run/react';
@@ -25,14 +25,16 @@ import {
 } from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
-import {Layout} from '~/components/Layout';
+import {PageLayout} from '~/components/PageLayout';
+import {GenericError} from '~/components/GenericError';
+import {NotFound} from '~/components/NotFound';
+import favicon from '~/assets/favicon.svg';
 import {seoPayload} from '~/lib/seo.server';
+import styles from '~/styles/app.css?url';
 
-import favicon from './assets/favicon.svg';
-import {GenericError} from './components/GenericError';
-import {NotFound} from './components/NotFound';
-import styles from './styles/app.css?url';
 import {DEFAULT_LOCALE, parseMenu} from './lib/utils';
+
+export type RootLoader = typeof loader;
 
 // This is important to avoid re-fetching root queries on sub-navigations
 export const shouldRevalidate: ShouldRevalidateFunction = ({
@@ -103,10 +105,10 @@ export const meta = ({data}: MetaArgs<typeof loader>) => {
   return getSeoMeta(data!.seo as SeoConfig);
 };
 
-export default function App() {
+function Layout({children}: {children?: React.ReactNode}) {
   const nonce = useNonce();
-  const data = useLoaderData<typeof loader>();
-  const locale = data.selectedLocale ?? DEFAULT_LOCALE;
+  const data = useRouteLoaderData<typeof loader>('root');
+  const locale = data?.selectedLocale ?? DEFAULT_LOCALE;
 
   return (
     <html lang={locale.language}>
@@ -118,18 +120,22 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Analytics.Provider
-          cart={data.cart}
-          shop={data.shop}
-          consent={data.consent}
-        >
-          <Layout
-            key={`${locale.language}-${locale.country}`}
-            layout={data.layout}
+        {data ? (
+          <Analytics.Provider
+            cart={data.cart}
+            shop={data.shop}
+            consent={data.consent}
           >
-            <Outlet />
-          </Layout>
-        </Analytics.Provider>
+            <PageLayout
+              key={`${locale.language}-${locale.country}`}
+              layout={data.layout}
+            >
+              {children}
+            </PageLayout>
+          </Analytics.Provider>
+        ) : (
+          children
+        )}
         <ScrollRestoration nonce={nonce} />
         <Scripts nonce={nonce} />
       </body>
@@ -137,11 +143,16 @@ export default function App() {
   );
 }
 
+export default function App() {
+  return (
+    <Layout>
+      <Outlet />
+    </Layout>
+  );
+}
+
 export function ErrorBoundary({error}: {error: Error}) {
-  const nonce = useNonce();
   const routeError = useRouteError();
-  const rootData = useLoaderData<typeof loader>();
-  const locale = rootData?.selectedLocale ?? DEFAULT_LOCALE;
   const isRouteError = isRouteErrorResponse(routeError);
 
   let title = 'Error';
@@ -153,37 +164,21 @@ export function ErrorBoundary({error}: {error: Error}) {
   }
 
   return (
-    <html lang={locale.language}>
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width,initial-scale=1" />
-        <title>{title}</title>
-        <Meta />
-        <Links />
-      </head>
-      <body>
-        <Layout
-          layout={rootData?.layout}
-          key={`${locale.language}-${locale.country}`}
-        >
-          {isRouteError ? (
-            <>
-              {routeError.status === 404 ? (
-                <NotFound type={pageType} />
-              ) : (
-                <GenericError
-                  error={{message: `${routeError.status} ${routeError.data}`}}
-                />
-              )}
-            </>
+    <Layout>
+      {isRouteError ? (
+        <>
+          {routeError.status === 404 ? (
+            <NotFound type={pageType} />
           ) : (
-            <GenericError error={error instanceof Error ? error : undefined} />
+            <GenericError
+              error={{message: `${routeError.status} ${routeError.data}`}}
+            />
           )}
-        </Layout>
-        <ScrollRestoration nonce={nonce} />
-        <Scripts nonce={nonce} />
-      </body>
-    </html>
+        </>
+      ) : (
+        <GenericError error={error instanceof Error ? error : undefined} />
+      )}
+    </Layout>
   );
 }
 
