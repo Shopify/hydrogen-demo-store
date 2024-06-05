@@ -5,11 +5,7 @@ import {
   type ActionFunctionArgs,
   json,
 } from '@shopify/remix-oxygen';
-import {
-  CartForm,
-  type CartQueryDataReturn,
-  UNSTABLE_Analytics as Analytics,
-} from '@shopify/hydrogen';
+import {CartForm, type CartQueryDataReturn, Analytics} from '@shopify/hydrogen';
 
 import {isLocalPath} from '~/lib/utils';
 import {Cart} from '~/components/Cart';

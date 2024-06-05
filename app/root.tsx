@@ -18,7 +18,7 @@ import {
 } from '@remix-run/react';
 import {
   useNonce,
-  UNSTABLE_Analytics as Analytics,
+  Analytics,
   getShopAnalytics,
   getSeoMeta,
   type SeoConfig,
