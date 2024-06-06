@@ -1,19 +1,15 @@
-import {Await} from '@remix-run/react';
+import {Await, useRouteLoaderData} from '@remix-run/react';
 import invariant from 'tiny-invariant';
 import {
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
   json,
 } from '@shopify/remix-oxygen';
-import {
-  CartForm,
-  type CartQueryDataReturn,
-  UNSTABLE_Analytics as Analytics,
-} from '@shopify/hydrogen';
+import {CartForm, type CartQueryDataReturn, Analytics} from '@shopify/hydrogen';
 
 import {isLocalPath} from '~/lib/utils';
 import {Cart} from '~/components/Cart';
-import {useRootLoaderData} from '~/hooks/useRootLoaderData';
+import type {RootLoader} from '~/root';
 
 export async function action({request, context}: ActionFunctionArgs) {
   const {cart} = context;
@@ -90,7 +86,9 @@ export async function loader({context}: LoaderFunctionArgs) {
 }
 
 export default function CartRoute() {
-  const rootData = useRootLoaderData();
+  const rootData = useRouteLoaderData<RootLoader>('root');
+  if (!rootData) return null;
+
   // @todo: finish on a separate PR
   return (
     <>
