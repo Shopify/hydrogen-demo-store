@@ -230,7 +230,7 @@ function MobileHeader({
         to="/"
       >
         <Heading
-          className="font-bold text-center leading-none"
+          className="font-bold text-center leading-none text-7xl"
           as={isHome ? 'h1' : 'h2'}
         >
           {title}
