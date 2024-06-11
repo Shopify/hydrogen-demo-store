@@ -38,20 +38,44 @@ import {MEDIA_FRAGMENT, PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
 
 export const headers = routeHeaders;
 
-export async function loader({params, request, context}: LoaderFunctionArgs) {
+export async function loader(args: LoaderFunctionArgs) {
+  const {productHandle} = args.params;
+  invariant(productHandle, 'Missing productHandle param, check route filename');
+
+  // Start fetching non-critical data without blocking time to first byte
+  const deferredData = loadDeferredData(args);
+
+  // Await the critical data required to render initial state of the page
+  const criticalData = await loadCriticalData(args);
+
+  return defer({...deferredData, ...criticalData});
+}
+
+/**
+ * Load data necessary for rendering content above the fold. This is the critical data
+ * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
+ */
+async function loadCriticalData({
+  params,
+  request,
+  context,
+}: LoaderFunctionArgs) {
   const {productHandle} = params;
   invariant(productHandle, 'Missing productHandle param, check route filename');
 
   const selectedOptions = getSelectedProductOptions(request);
 
-  const {shop, product} = await context.storefront.query(PRODUCT_QUERY, {
-    variables: {
-      handle: productHandle,
-      selectedOptions,
-      country: context.storefront.i18n.country,
-      language: context.storefront.i18n.language,
-    },
-  });
+  const [{shop, product}] = await Promise.all([
+    context.storefront.query(PRODUCT_QUERY, {
+      variables: {
+        handle: productHandle,
+        selectedOptions,
+        country: context.storefront.i18n.country,
+        language: context.storefront.i18n.language,
+      },
+    }),
+    // Add other queries here, so that they are loaded in parallel
+  ]);
 
   if (!product?.id) {
     throw new Response('product', {status: 404});
@@ -60,19 +84,6 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
   if (!product.selectedVariant) {
     throw redirectToFirstVariant({product, request});
   }
-
-  // In order to show which variants are available in the UI, we need to query
-  // all of them. But there might be a *lot*, so instead separate the variants
-  // into it's own separate query that is deferred. So there's a brief moment
-  // where variant options might show as available when they're not, but after
-  // this deferred query resolves, the UI will update.
-  const variants = context.storefront.query(VARIANTS_QUERY, {
-    variables: {
-      handle: productHandle,
-      country: context.storefront.i18n.country,
-      language: context.storefront.i18n.language,
-    },
-  });
 
   const recommended = getRecommendedProducts(context.storefront, product.id);
 
@@ -87,14 +98,38 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
     url: request.url,
   });
 
-  return defer({
-    variants,
+  return {
     product,
     shop,
     storeDomain: shop.primaryDomain.url,
     recommended,
     seo,
+  };
+}
+
+/**
+ * Load data for rendering content below the fold. This data is deferred and will be
+ * fetched after the initial page load. If it's unavailable, the page should still 200.
+ * Make sure to not throw any errors here, as it will cause the page to 500.
+ */
+function loadDeferredData({params, context}: LoaderFunctionArgs) {
+  const {productHandle} = params;
+  invariant(productHandle, 'Missing productHandle param, check route filename');
+
+  // In order to show which variants are available in the UI, we need to query
+  // all of them. But there might be a *lot*, so instead separate the variants
+  // into it's own separate query that is deferred. So there's a brief moment
+  // where variant options might show as available when they're not, but after
+  // this deferred query resolves, the UI will update.
+  const variants = context.storefront.query(VARIANTS_QUERY, {
+    variables: {
+      handle: productHandle,
+      country: context.storefront.i18n.country,
+      language: context.storefront.i18n.language,
+    },
   });
+
+  return {variants};
 }
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {

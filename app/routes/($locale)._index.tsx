@@ -17,7 +17,8 @@ import {routeHeaders} from '~/data/cache';
 
 export const headers = routeHeaders;
 
-export async function loader({params, context}: LoaderFunctionArgs) {
+export async function loader(args: LoaderFunctionArgs) {
+  const {params, context} = args;
   const {language, country} = context.storefront.i18n;
 
   if (
@@ -29,53 +30,107 @@ export async function loader({params, context}: LoaderFunctionArgs) {
     throw new Response(null, {status: 404});
   }
 
-  const {shop, hero} = await context.storefront.query(HOMEPAGE_SEO_QUERY, {
-    variables: {handle: 'freestyle'},
-  });
+  // Start fetching non-critical data without blocking time to first byte
+  const deferredData = loadDeferredData(args);
 
-  const seo = seoPayload.home();
+  // Await the critical data required to render initial state of the page
+  const criticalData = await loadCriticalData(args);
 
-  return defer({
+  return defer({...deferredData, ...criticalData});
+}
+
+/**
+ * Load data necessary for rendering content above the fold. This is the critical data
+ * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
+ */
+async function loadCriticalData({context}: LoaderFunctionArgs) {
+  const [{shop, hero}] = await Promise.all([
+    context.storefront.query(HOMEPAGE_SEO_QUERY, {
+      variables: {handle: 'freestyle'},
+    }),
+    // Add other queries here, so that they are loaded in parallel
+  ]);
+
+  return {
     shop,
     primaryHero: hero,
-    // These different queries are separated to illustrate how 3rd party content
-    // fetching can be optimized for both above and below the fold.
-    featuredProducts: context.storefront.query(
-      HOMEPAGE_FEATURED_PRODUCTS_QUERY,
-      {
-        variables: {
-          /**
-           * Country and language properties are automatically injected
-           * into all queries. Passing them is unnecessary unless you
-           * want to override them from the following default:
-           */
-          country,
-          language,
-        },
+    seo: seoPayload.home(),
+  };
+}
+
+/**
+ * Load data for rendering content below the fold. This data is deferred and will be
+ * fetched after the initial page load. If it's unavailable, the page should still 200.
+ * Make sure to not throw any errors here, as it will cause the page to 500.
+ */
+function loadDeferredData({context}: LoaderFunctionArgs) {
+  const {language, country} = context.storefront.i18n;
+
+  const featuredProducts = context.storefront
+    .query(HOMEPAGE_FEATURED_PRODUCTS_QUERY, {
+      variables: {
+        /**
+         * Country and language properties are automatically injected
+         * into all queries. Passing them is unnecessary unless you
+         * want to override them from the following default:
+         */
+        country,
+        language,
       },
-    ),
-    secondaryHero: context.storefront.query(COLLECTION_HERO_QUERY, {
+    })
+    .catch((error) => {
+      // Log query errors, but don't throw them so the page can still render
+      console.error(error);
+      return null;
+    });
+
+  const secondaryHero = context.storefront
+    .query(COLLECTION_HERO_QUERY, {
       variables: {
         handle: 'backcountry',
         country,
         language,
       },
-    }),
-    featuredCollections: context.storefront.query(FEATURED_COLLECTIONS_QUERY, {
+    })
+    .catch((error) => {
+      // Log query errors, but don't throw them so the page can still render
+      console.error(error);
+      return null;
+    });
+
+  const featuredCollections = context.storefront
+    .query(FEATURED_COLLECTIONS_QUERY, {
       variables: {
         country,
         language,
       },
-    }),
-    tertiaryHero: context.storefront.query(COLLECTION_HERO_QUERY, {
+    })
+    .catch((error) => {
+      // Log query errors, but don't throw them so the page can still render
+      console.error(error);
+      return null;
+    });
+
+  const tertiaryHero = context.storefront
+    .query(COLLECTION_HERO_QUERY, {
       variables: {
         handle: 'winter-2022',
         country,
         language,
       },
-    }),
-    seo,
-  });
+    })
+    .catch((error) => {
+      // Log query errors, but don't throw them so the page can still render
+      console.error(error);
+      return null;
+    });
+
+  return {
+    featuredProducts,
+    secondaryHero,
+    featuredCollections,
+    tertiaryHero,
+  };
 }
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {
@@ -103,11 +158,17 @@ export default function Homepage() {
       {featuredProducts && (
         <Suspense>
           <Await resolve={featuredProducts}>
-            {({products}) => {
-              if (!products?.nodes) return <></>;
+            {(response) => {
+              if (
+                !response ||
+                !response?.products ||
+                !response?.products?.nodes
+              ) {
+                return <></>;
+              }
               return (
                 <ProductSwimlane
-                  products={products}
+                  products={response.products}
                   title="Featured Products"
                   count={4}
                 />
@@ -120,9 +181,11 @@ export default function Homepage() {
       {secondaryHero && (
         <Suspense fallback={<Hero {...skeletons[1]} />}>
           <Await resolve={secondaryHero}>
-            {({hero}) => {
-              if (!hero) return <></>;
-              return <Hero {...hero} />;
+            {(response) => {
+              if (!response || !response?.hero) {
+                return <></>;
+              }
+              return <Hero {...response.hero} />;
             }}
           </Await>
         </Suspense>
@@ -131,11 +194,17 @@ export default function Homepage() {
       {featuredCollections && (
         <Suspense>
           <Await resolve={featuredCollections}>
-            {({collections}) => {
-              if (!collections?.nodes) return <></>;
+            {(response) => {
+              if (
+                !response ||
+                !response?.collections ||
+                !response?.collections?.nodes
+              ) {
+                return <></>;
+              }
               return (
                 <FeaturedCollections
-                  collections={collections}
+                  collections={response.collections}
                   title="Collections"
                 />
               );
@@ -147,9 +216,11 @@ export default function Homepage() {
       {tertiaryHero && (
         <Suspense fallback={<Hero {...skeletons[2]} />}>
           <Await resolve={tertiaryHero}>
-            {({hero}) => {
-              if (!hero) return <></>;
-              return <Hero {...hero} />;
+            {(response) => {
+              if (!response || !response?.hero) {
+                return <></>;
+              }
+              return <Hero {...response.hero} />;
             }}
           </Await>
         </Suspense>

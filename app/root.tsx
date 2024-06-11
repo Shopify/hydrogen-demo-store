@@ -70,35 +70,67 @@ export const links: LinksFunction = () => {
   ];
 };
 
-export async function loader({request, context}: LoaderFunctionArgs) {
-  const {storefront, cart, env} = context;
-  const layout = await getLayoutData(context);
-  const isLoggedInPromise = context.customerAccount.isLoggedIn();
+export async function loader(args: LoaderFunctionArgs) {
+  // Start fetching non-critical data without blocking time to first byte
+  const deferredData = loadDeferredData(args);
 
-  const seo = seoPayload.root({shop: layout.shop, url: request.url});
+  // Await the critical data required to render initial state of the page
+  const criticalData = await loadCriticalData(args);
 
   return defer(
     {
-      shop: getShopAnalytics({
-        storefront: context.storefront,
-        publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
-      }),
-      consent: {
-        checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
-        storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
-      },
-      isLoggedIn: isLoggedInPromise,
-      layout,
-      selectedLocale: storefront.i18n,
-      cart: cart.get(),
-      seo,
+      ...deferredData,
+      ...criticalData,
     },
     {
       headers: {
-        'Set-Cookie': await context.session.commit(),
+        'Set-Cookie': await args.context.session.commit(),
       },
     },
   );
+}
+
+/**
+ * Load data necessary for rendering content above the fold. This is the critical data
+ * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
+ */
+async function loadCriticalData({request, context}: LoaderFunctionArgs) {
+  const [layout] = await Promise.all([
+    getLayoutData(context),
+    // Add other queries here, so that they are loaded in parallel
+  ]);
+
+  const seo = seoPayload.root({shop: layout.shop, url: request.url});
+
+  const {storefront, env} = context;
+
+  return {
+    layout,
+    seo,
+    shop: getShopAnalytics({
+      storefront,
+      publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
+    }),
+    consent: {
+      checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
+      storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
+    },
+    selectedLocale: storefront.i18n,
+  };
+}
+
+/**
+ * Load data for rendering content below the fold. This data is deferred and will be
+ * fetched after the initial page load. If it's unavailable, the page should still 200.
+ * Make sure to not throw any errors here, as it will cause the page to 500.
+ */
+function loadDeferredData({context}: LoaderFunctionArgs) {
+  const {cart, customerAccount} = context;
+
+  return {
+    isLoggedIn: customerAccount.isLoggedIn(),
+    cart: cart.get(),
+  };
 }
 
 export const meta = ({data}: MetaArgs<typeof loader>) => {
