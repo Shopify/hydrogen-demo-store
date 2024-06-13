@@ -15,7 +15,7 @@ import {
   Pagination,
   flattenConnection,
   getPaginationVariables,
-  UNSTABLE_Analytics as Analytics,
+  Analytics,
   getSeoMeta,
 } from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';

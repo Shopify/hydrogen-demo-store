@@ -1,4 +1,4 @@
-import {useParams, Form, Await} from '@remix-run/react';
+import {useParams, Form, Await, useRouteLoaderData} from '@remix-run/react';
 import useWindowScroll from 'react-use/esm/useWindowScroll';
 import {Disclosure} from '@headlessui/react';
 import {Suspense, useEffect, useMemo} from 'react';
@@ -27,7 +27,7 @@ import {
 } from '~/lib/utils';
 import {useIsHydrated} from '~/hooks/useIsHydrated';
 import {useCartFetchers} from '~/hooks/useCartFetchers';
-import {useRootLoaderData} from '~/root';
+import type {RootLoader} from '~/root';
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -37,7 +37,7 @@ type LayoutProps = {
   };
 };
 
-export function Layout({children, layout}: LayoutProps) {
+export function PageLayout({children, layout}: LayoutProps) {
   const {headerMenu, footerMenu} = layout || {};
   return (
     <>
@@ -105,7 +105,8 @@ function Header({title, menu}: {title: string; menu?: EnhancedMenu}) {
 }
 
 function CartDrawer({isOpen, onClose}: {isOpen: boolean; onClose: () => void}) {
-  const rootData = useRootLoaderData();
+  const rootData = useRouteLoaderData<RootLoader>('root');
+  if (!rootData) return null;
 
   return (
     <Drawer open={isOpen} onClose={onClose} heading="Cart" openFrom="right">
@@ -321,7 +322,7 @@ function DesktopHeader({
 }
 
 function AccountLink({className}: {className?: string}) {
-  const rootData = useRootLoaderData();
+  const rootData = useRouteLoaderData<RootLoader>('root');
   const isLoggedIn = rootData?.isLoggedIn;
 
   return (
@@ -342,7 +343,8 @@ function CartCount({
   isHome: boolean;
   openCart: () => void;
 }) {
-  const rootData = useRootLoaderData();
+  const rootData = useRouteLoaderData<RootLoader>('root');
+  if (!rootData) return null;
 
   return (
     <Suspense fallback={<Badge count={0} dark={isHome} openCart={openCart} />}>

@@ -1,4 +1,4 @@
-import {useFetcher, useLocation, useMatches} from '@remix-run/react';
+import {useFetcher, useLocation, useRouteLoaderData} from '@remix-run/react';
 import {useCallback, useEffect, useRef} from 'react';
 import {useInView} from 'react-intersection-observer';
 import clsx from 'clsx';
@@ -10,12 +10,12 @@ import {Heading} from '~/components/Text';
 import {IconCheck} from '~/components/Icon';
 import type {Localizations, Locale} from '~/lib/type';
 import {DEFAULT_LOCALE} from '~/lib/utils';
-import {useRootLoaderData} from '~/root';
+import type {RootLoader} from '~/root';
 
 export function CountrySelector() {
   const fetcher = useFetcher();
   const closeRef = useRef<HTMLDetailsElement>(null);
-  const rootData = useRootLoaderData();
+  const rootData = useRouteLoaderData<RootLoader>('root');
   const selectedLocale = rootData?.selectedLocale ?? DEFAULT_LOCALE;
   const {pathname, search} = useLocation();
   const pathWithoutLocale = `${pathname.replace(

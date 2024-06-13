@@ -8,7 +8,7 @@ import {Suspense} from 'react';
 import {
   Pagination,
   getPaginationVariables,
-  UNSTABLE_Analytics as Analytics,
+  Analytics,
   getSeoMeta,
 } from '@shopify/hydrogen';
 

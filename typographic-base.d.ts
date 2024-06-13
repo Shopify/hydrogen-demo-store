@@ -1,1 +1,1 @@
-declare module 'typographic-base/index';
+declare module 'typographic-base';
