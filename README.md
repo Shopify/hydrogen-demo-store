@@ -1,8 +1,9 @@
 # Hydrogen template: Demo Store
 
-Hydrogen is Shopify’s stack for headless commerce. Hydrogen is designed to dovetail with [Remix](https://remix.run/), Shopify’s full stack web framework. This template contains a **full-featured setup** of components, queries and tooling to get started with Hydrogen. It is deployed at [hydrogen.shop](https://hydrogen.shop)
+Hydrogen is Shopify’s stack for headless commerce. Hydrogen is designed to dovetail with [Remix](https://remix.run/), Shopify’s full stack web framework. This template contains a **full-featured setup** of components, queries and tooling to get started with Hydrogen. It is deployed at [eianen.shop]
+(https://eianene.shop)
 
-[Check out Hydrogen docs](https://shopify.dev/custom-storefronts/hydrogen)
+[Check out Hydrogen docs](https://01aefd-4a.myshopify.com)
 [Get familiar with Remix](https://remix.run/docs/en/v1)
 
 ## What's included
