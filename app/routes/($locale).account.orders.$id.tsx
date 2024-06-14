@@ -58,26 +58,16 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
         ? fulfillments[0].status
         : ('OPEN' as FulfillmentStatus);
 
-    return json(
-      {
-        order,
-        lineItems,
-        discountValue,
-        discountPercentage,
-        fulfillmentStatus,
-      },
-      {
-        headers: {
-          'Set-Cookie': await context.session.commit(),
-        },
-      },
-    );
+    return json({
+      order,
+      lineItems,
+      discountValue,
+      discountPercentage,
+      fulfillmentStatus,
+    });
   } catch (error) {
     throw new Response(error instanceof Error ? error.message : undefined, {
       status: 404,
-      headers: {
-        'Set-Cookie': await context.session.commit(),
-      },
     });
   }
 }
