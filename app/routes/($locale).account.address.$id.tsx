@@ -64,20 +64,12 @@ export const action: ActionFunction = async ({request, context, params}) => {
 
       return redirect(
         params?.locale ? `${params?.locale}/account` : '/account',
-        {
-          headers: {
-            'Set-Cookie': await context.session.commit(),
-          },
-        },
       );
     } catch (error: any) {
       return json(
         {formError: error.message},
         {
           status: 400,
-          headers: {
-            'Set-Cookie': await context.session.commit(),
-          },
         },
       );
     }
@@ -130,20 +122,12 @@ export const action: ActionFunction = async ({request, context, params}) => {
 
       return redirect(
         params?.locale ? `${params?.locale}/account` : '/account',
-        {
-          headers: {
-            'Set-Cookie': await context.session.commit(),
-          },
-        },
       );
     } catch (error: any) {
       return json(
         {formError: error.message},
         {
           status: 400,
-          headers: {
-            'Set-Cookie': await context.session.commit(),
-          },
         },
       );
     }
@@ -169,20 +153,12 @@ export const action: ActionFunction = async ({request, context, params}) => {
 
       return redirect(
         params?.locale ? `${params?.locale}/account` : '/account',
-        {
-          headers: {
-            'Set-Cookie': await context.session.commit(),
-          },
-        },
       );
     } catch (error: any) {
       return json(
         {formError: error.message},
         {
           status: 400,
-          headers: {
-            'Set-Cookie': await context.session.commit(),
-          },
         },
       );
     }

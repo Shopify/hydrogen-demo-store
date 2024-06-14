@@ -68,8 +68,6 @@ export async function action({request, context}: ActionFunctionArgs) {
 
   const {cart: cartResult, errors, userErrors} = result;
 
-  headers.append('Set-Cookie', await context.session.commit());
-
   return json(
     {
       cart: cartResult,

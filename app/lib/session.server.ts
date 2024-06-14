@@ -11,6 +11,7 @@ import {
  * swap out the cookie-based implementation with something else!
  */
 export class AppSession implements HydrogenSession {
+  public isPending = false;
   #sessionStorage;
   #session;
 
@@ -50,10 +51,12 @@ export class AppSession implements HydrogenSession {
   }
 
   get unset() {
+    this.isPending = true;
     return this.#session.unset;
   }
 
   get set() {
+    this.isPending = true;
     return this.#session.set;
   }
 
@@ -62,6 +65,7 @@ export class AppSession implements HydrogenSession {
   }
 
   commit() {
+    this.isPending = false;
     return this.#sessionStorage.commitSession(this.#session);
   }
 }

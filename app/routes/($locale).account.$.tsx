@@ -5,9 +5,5 @@ export async function loader({context, params}: LoaderFunctionArgs) {
   await context.customerAccount.handleAuthStatus();
 
   const locale = params.locale;
-  return redirect(locale ? `/${locale}/account` : '/account', {
-    headers: {
-      'Set-Cookie': await context.session.commit(),
-    },
-  });
+  return redirect(locale ? `/${locale}/account` : '/account');
 }

@@ -77,17 +77,10 @@ export async function loader(args: LoaderFunctionArgs) {
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  return defer(
-    {
-      ...deferredData,
-      ...criticalData,
-    },
-    {
-      headers: {
-        'Set-Cookie': await args.context.session.commit(),
-      },
-    },
-  );
+  return defer({
+    ...deferredData,
+    ...criticalData,
+  });
 }
 
 /**

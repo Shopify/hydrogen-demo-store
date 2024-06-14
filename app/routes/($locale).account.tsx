@@ -63,7 +63,6 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
     {
       headers: {
         'Cache-Control': CACHE_NONE,
-        'Set-Cookie': await context.session.commit(),
       },
     },
   );
