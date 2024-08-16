@@ -217,7 +217,7 @@ const PRODUCT_SITEMAP_QUERY = `#graphql
 ` as const;
 
 const COLLECTION_SITEMAP_QUERY = `#graphql
-    query SitemapProducts($page: Int!) {
+    query SitemapCollections($page: Int!) {
       sitemap(type: COLLECTION) {
         resources(page: $page) {
           items {
@@ -230,7 +230,7 @@ const COLLECTION_SITEMAP_QUERY = `#graphql
 ` as const;
 
 const ARTICLE_SITEMAP_QUERY = `#graphql
-    query SitemapProducts($page: Int!) {
+    query SitemapArticles($page: Int!) {
       sitemap(type: ARTICLE) {
         resources(page: $page) {
           items {
@@ -243,7 +243,7 @@ const ARTICLE_SITEMAP_QUERY = `#graphql
 ` as const;
 
 const PAGE_SITEMAP_QUERY = `#graphql
-    query SitemapProducts($page: Int!) {
+    query SitemapPages($page: Int!) {
       sitemap(type: PAGE) {
         resources(page: $page) {
           items {
@@ -256,7 +256,7 @@ const PAGE_SITEMAP_QUERY = `#graphql
 ` as const;
 
 const BLOG_SITEMAP_QUERY = `#graphql
-    query SitemapProducts($page: Int!) {
+    query SitemapBlogs($page: Int!) {
       sitemap(type: BLOG) {
         resources(page: $page) {
           items {
@@ -269,7 +269,7 @@ const BLOG_SITEMAP_QUERY = `#graphql
 ` as const;
 
 const METAOBJECT_SITEMAP_QUERY = `#graphql
-    query SitemapProducts($page: Int!) {
+    query SitemapMetaobjects($page: Int!) {
       sitemap(type: METAOBJECT_PAGE) {
         resources(page: $page) {
           items {
