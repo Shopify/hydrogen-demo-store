@@ -22,11 +22,7 @@ export default async function handleRequest(
       'https://shopify.com',
       'https://www.google-analytics.com',
       'https://www.googletagmanager.com',
-      ...(process.env.NODE_ENV !== 'production'
-        ? [
-            'http://localhost:*',
-          ]
-        : []),
+      ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:*'] : []),
     ],
   });
 
