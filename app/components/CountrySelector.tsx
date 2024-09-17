@@ -11,6 +11,7 @@ import {IconCheck} from '~/components/Icon';
 import type {Localizations, Locale} from '~/lib/type';
 import {DEFAULT_LOCALE} from '~/lib/utils';
 import type {RootLoader} from '~/root';
+import {useCartPath} from '~/hooks/useCartPath';
 
 export function CountrySelector() {
   const fetcher = useFetcher();
@@ -146,9 +147,11 @@ function ChangeLocaleForm({
   buyerIdentity: CartBuyerIdentityInput;
   redirectTo: string;
 }) {
+  const cartPath = useCartPath();
+
   return (
     <CartForm
-      route="/cart"
+      route={cartPath}
       action={CartForm.ACTIONS.BuyerIdentityUpdate}
       inputs={{
         buyerIdentity,
