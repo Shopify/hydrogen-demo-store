@@ -43,7 +43,7 @@ export async function loader(args: LoaderFunctionArgs) {
  * Load data necessary for rendering content above the fold. This is the critical data
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
-async function loadCriticalData({context}: LoaderFunctionArgs) {
+async function loadCriticalData({context, request}: LoaderFunctionArgs) {
   const [{shop, hero}] = await Promise.all([
     context.storefront.query(HOMEPAGE_SEO_QUERY, {
       variables: {handle: 'freestyle'},
@@ -54,7 +54,7 @@ async function loadCriticalData({context}: LoaderFunctionArgs) {
   return {
     shop,
     primaryHero: hero,
-    seo: seoPayload.home(),
+    seo: seoPayload.home({url: request.url}),
   };
 }
 

@@ -61,11 +61,12 @@ function root({
   };
 }
 
-function home(): SeoConfig {
+function home({url}: {url: Request['url']}): SeoConfig {
   return {
     title: 'Home',
     titleTemplate: '%s | Hydrogen Demo Store',
     description: 'The best place to buy snowboarding products',
+    url,
     robots: {
       noIndex: false,
       noFollow: false,
@@ -178,6 +179,7 @@ function product({
   return {
     title: product?.seo?.title ?? product?.title,
     description,
+    url,
     media: selectedVariant?.image,
     jsonLd: productJsonLd({product, selectedVariant, url}),
   };
@@ -259,6 +261,7 @@ function collection({
       collection?.seo?.description ?? collection?.description ?? '',
     ),
     titleTemplate: '%s | Collection',
+    url,
     media: {
       type: 'image',
       url: collection?.image?.url,
