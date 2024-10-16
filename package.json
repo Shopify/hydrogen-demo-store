@@ -1,5 +1,5 @@
 {
-  "name": "demo-store",
+  "name": "hydrogen-store",
   "private": true,
   "sideEffects": false,
   "version": "2.1.6",
