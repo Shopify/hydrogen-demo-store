@@ -5,6 +5,7 @@
 import type {
   WithCache,
   HydrogenCart,
+  HydrogenEnv,
   HydrogenSessionData,
 } from '@shopify/hydrogen';
 import type {Storefront, CustomerAccount} from '~/lib/type';
@@ -20,16 +21,7 @@ declare global {
   /**
    * Declare expected Env parameter in fetch handler.
    */
-  interface Env {
-    SESSION_SECRET: string;
-    PUBLIC_STOREFRONT_API_TOKEN: string;
-    PRIVATE_STOREFRONT_API_TOKEN: string;
-    PUBLIC_STORE_DOMAIN: string;
-    PUBLIC_STOREFRONT_ID: string;
-    PUBLIC_CUSTOMER_ACCOUNT_API_CLIENT_ID: string;
-    PUBLIC_CUSTOMER_ACCOUNT_API_URL: string;
-    PUBLIC_CHECKOUT_DOMAIN: string;
-  }
+  interface Env extends HydrogenEnv {}
 }
 
 declare module '@shopify/remix-oxygen' {
