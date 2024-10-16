@@ -12,17 +12,42 @@ export default async function handleRequest(
   context: AppLoadContext,
 ) {
   const {nonce, header, NonceProvider} = createContentSecurityPolicy({
-    shop: {
-      checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
-      storeDomain: context.env.PUBLIC_STORE_DOMAIN,
-    },
+    connectSrc: ['*', 'https://app.octaneai.com'],
+    fontSrc: [
+      'https://cdn.shopify.com',
+      'https://*.typekit.net',
+      'https://shopify.com',
+    ],
+    imgSrc: ['*', 'data:*'],
+    mediaSrc: ['https://cdn.builder.io'],
     scriptSrc: [
       'self',
       'https://cdn.shopify.com',
       'https://shopify.com',
       'https://www.google-analytics.com',
       'https://www.googletagmanager.com',
+      'https://app.octaneai.com',
+      'https://cdn.attn.tv',
+      'http://widget.manychat.com',
+      'https://cdn.reamaze.com',
+      'https://cdn.sweettooth.io',
+      'https://cdn.verifiedpass.com',
+      'http://static.klaviyo.com',
+      'https://connect.facebook.net',
       ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:*'] : []),
+    ],
+    shop: {
+      checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
+      storeDomain: context.env.PUBLIC_STORE_DOMAIN,
+    },
+    styleSrc: [
+      "'self'",
+      "'unsafe-inline'",
+      'https://app.octaneai.com',
+      'https://cdn.shopify.com',
+      'https://*.typekit.net',
+      'https://shopify.com',
+      'http://localhost:*',
     ],
   });
 

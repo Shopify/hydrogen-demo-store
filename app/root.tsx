@@ -30,7 +30,9 @@ import {GenericError} from '~/components/GenericError';
 import {NotFound} from '~/components/NotFound';
 import favicon from '~/assets/favicon.svg';
 import {seoPayload} from '~/lib/seo.server';
-import styles from '~/styles/app.css?url';
+import resetStyles from '~/styles/reset.css?url';
+import appStyles from '~/styles/app.css?url';
+import fontStyles from '~/styles/fonts.css?url';
 
 import {DEFAULT_LOCALE, parseMenu} from './lib/utils';
 
@@ -57,7 +59,9 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
 
 export const links: LinksFunction = () => {
   return [
-    {rel: 'stylesheet', href: styles},
+    {rel: 'stylesheet', href: fontStyles}, // Load fonts
+    {rel: 'stylesheet', href: resetStyles}, // Reset browser styles
+    {rel: 'stylesheet', href: appStyles}, // Load custom app-specific styles
     {
       rel: 'preconnect',
       href: 'https://cdn.shopify.com',
@@ -264,10 +268,14 @@ const LAYOUT_QUERY = `#graphql
 ` as const;
 
 async function getLayoutData({storefront, env}: AppLoadContext) {
+  const HEADER_MENU_HANDLE = 'remix-navigation-header-main';
+  const HEADER_SECONDARY_MENU_HANDLE = 'remix-navigation-header-secondary';
+  const FOOTER_MENU_HANDLE = 'hydrogen-footer';
+
   const data = await storefront.query(LAYOUT_QUERY, {
     variables: {
-      headerMenuHandle: 'main-menu',
-      footerMenuHandle: 'footer',
+      headerMenuHandle: HEADER_MENU_HANDLE,
+      footerMenuHandle: FOOTER_MENU_HANDLE,
       language: storefront.i18n.language,
     },
   });

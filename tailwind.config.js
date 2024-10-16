@@ -41,6 +41,13 @@ export default {
       fontFamily: {
         sans: ['Helvetica Neue', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         serif: ['"IBMPlexSerif"', 'Palatino', 'ui-serif'],
+        display: ['Satoshi', 'sans-serif', 'system-ui'],
+        arial: ['arial', 'system-ui'],
+        bc_sklonar: ['bc-sklonar', 'system-ui'],
+        brandon_grotesque: ['brandon-grotesque', 'system-ui', 'sans-serif'],
+        CaslonCP: ['CaslonCP', 'system-ui'],
+        Futura: ['Futura', 'system-ui'],
+        FuturaSC: ['FuturaSC', 'system-ui'],
       },
       fontSize: {
         display: ['var(--font-size-display)', '1.1'],

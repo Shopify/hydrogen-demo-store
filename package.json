@@ -20,6 +20,10 @@
   ],
   "prettier": "@shopify/prettier-config",
   "dependencies": {
+    "@builder.io/dev-tools": "^1.1.23",
+    "@builder.io/react": "^5.0.5",
+    "@builder.io/sdk": "^3.0.2",
+    "@builder.io/sdk-react": "^2.0.19",
     "@headlessui/react": "^1.7.2",
     "@remix-run/node": "^2.10.1",
     "@remix-run/react": "^2.10.1",

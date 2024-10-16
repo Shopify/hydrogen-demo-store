@@ -1,0 +1,254 @@
+@import url('https://use.typekit.net/bit4csy.css');
+
+/*
+! --------------------------------------------------
+! ZOX FONTS
+! --------------------------------------------------
+*/
+
+/*
+* --------------------------------------------------
+* Futura
+* --------------------------------------------------
+*/
+/* Light Normal */
+@font-face {
+  font-family: Futura;
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/Futura-Lig.otf') format('opentype');
+}
+/* Light Oblique */
+@font-face {
+  font-family: Futura;
+  font-weight: 100;
+  font-style: oblique;
+  font-display: swap;
+  src: url('./fonts/Futura-LigObl.otf') format('opentype');
+}
+/* Boo Normal */
+@font-face {
+  font-family: Futura;
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/Futura-Boo.otf') format('opentype');
+}
+/* Medium Normal */
+@font-face {
+  font-family: Futura;
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/Futura-Med.otf') format('opentype');
+}
+/* Medium Oblique */
+@font-face {
+  font-family: Futura;
+  font-weight: 300;
+  font-style: oblique;
+  font-display: swap;
+  src: url('./fonts/Futura-MedObl.otf') format('opentype');
+}
+/* Dem Normal */
+@font-face {
+  font-family: Futura;
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/Futura-Dem.otf') format('opentype');
+}
+/* Dem Oblique */
+@font-face {
+  font-family: Futura;
+  font-weight: 400;
+  font-style: oblique;
+  font-display: swap;
+  src: url('./fonts/Futura-DemObl.otf') format('opentype');
+}
+/* Bol Normal */
+@font-face {
+  font-family: Futura;
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/Futura-Bol.otf') format('opentype');
+}
+/* Bol Oblique */
+@font-face {
+  font-family: Futura;
+  font-weight: 500;
+  font-style: oblique;
+  font-display: swap;
+  src: url('./fonts/Futura-BolObl.otf') format('opentype');
+}
+/* ExtBol Normal */
+@font-face {
+  font-family: Futura;
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/Futura-ExtBol.otf') format('opentype');
+}
+/* ExtBol Oblique */
+@font-face {
+  font-family: Futura;
+  font-weight: 600;
+  font-style: oblique;
+  font-display: swap;
+  src: url('./fonts/Futura-ExtBolObl.otf') format('opentype');
+}
+
+/*
+* --------------------------------------------------
+* Futura SC
+* --------------------------------------------------
+*/
+
+/* SC Light */
+@font-face {
+  font-family: FuturaSC;
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/FuturaSC-Lig.otf') format('opentype');
+}
+/* SC Boo */
+@font-face {
+  font-family: FuturaSC;
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/FuturaSC-Boo.otf') format('opentype');
+}
+/* SC Medium */
+@font-face {
+  font-family: FuturaSC;
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/FuturaSC-Med.otf') format('opentype');
+}
+/* SC Dem */
+@font-face {
+  font-family: FuturaSC;
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/FuturaSC-Dem.otf') format('opentype');
+}
+
+/*
+* --------------------------------------------------
+* Brandon Grotesque
+* --------------------------------------------------
+*/
+
+/* Brandon Grotesque Thin */
+@font-face {
+  font-family: brandon-grotesque, sans-serif;
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://use.typekit.net/bit4csy.css');
+}
+/* Brandon Grotesque Light */
+@font-face {
+  font-family: brandon-grotesque, sans-serif;
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://use.typekit.net/bit4csy.css');
+}
+/* Brandon Grotesque Regular */
+@font-face {
+  font-family: brandon-grotesque, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://use.typekit.net/bit4csy.css');
+}
+/* Brandon Grotesque Italic */
+@font-face {
+  font-family: brandon-grotesque, sans-serif;
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+  src: url('https://use.typekit.net/bit4csy.css');
+}
+/* Brandon Grotesque Bold */
+@font-face {
+  font-family: brandon-grotesque, sans-serif;
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://use.typekit.net/bit4csy.css');
+}
+/* Brandon Grotesque Bold Italic */
+@font-face {
+  font-family: brandon-grotesque, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+  src: url('https://use.typekit.net/bit4csy.css');
+}
+
+/*
+* --------------------------------------------------
+* Caslon CP
+* --------------------------------------------------
+*/
+
+/* Caslon CP */
+@font-face {
+  font-family: CaslonCP;
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/CaslonCP.otf');
+}
+/* Caslon CP swash */
+@font-face {
+  font-family: CaslonCP;
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: url('./fonts/CaslonCPswash.otf');
+}
+
+/*
+* --------------------------------------------------
+* BC Sklonar
+* --------------------------------------------------
+*/
+
+/* BC Sklonar Light */
+@font-face {
+  font-family: bc-sklonar, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+  src: url('https://use.typekit.net/bit4csy.css');
+}
+/* BC Sklonar Bold */
+@font-face {
+  font-family: bc-sklonar, sans-serif;
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+  src: url('https://use.typekit.net/bit4csy.css');
+}
+
+/* @font-face {
+  font-family: 'flex-icon';
+  src: url('//cdn.shopify.com/s/files/1/2031/9599/t/225/assets/flex-icon.ttf?v=14100130636688647098')
+      format('truetype'),
+    url('//cdn.shopify.com/s/files/1/2031/9599/t/225/assets/flex-icon.woff?v=6556297278318994921')
+      format('woff'),
+    url('//cdn.shopify.com/s/files/1/2031/9599/t/225/assets/flex-icon.svg?v=12215575079412057538')
+      format('svg');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+} */
