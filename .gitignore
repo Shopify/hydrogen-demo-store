@@ -8,6 +8,10 @@ node_modules
 .env
 .vscode
 .shopify
+public/~partytown
+.hydrogen
+ghost.js
+
 /test-results/
 /playwright-report/
 /playwright/.cache/
