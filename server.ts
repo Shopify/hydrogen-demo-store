@@ -1,21 +1,11 @@
 // @ts-ignore
 // Virtual entry point for the app
 import * as remixBuild from 'virtual:remix/server-build';
-import {
-  createRequestHandler,
-  getStorefrontHeaders,
-} from '@shopify/remix-oxygen';
-import {
-  cartGetIdDefault,
-  cartSetIdDefault,
-  createCartHandler,
-  createStorefrontClient,
-  storefrontRedirect,
-  createCustomerAccountClient,
-} from '@shopify/hydrogen';
+import {createRequestHandler} from '@shopify/remix-oxygen';
+import {storefrontRedirect} from '@shopify/hydrogen';
 
+import {createAppLoadContext} from '~/lib/context';
 import {AppSession} from '~/lib/session.server';
-import {getLocaleFromRequest} from '~/lib/utils';
 
 /**
  * Export a fetch handler in module format.
@@ -40,37 +30,11 @@ export default {
         AppSession.init(request, [env.SESSION_SECRET]),
       ]);
 
-      /**
-       * Create Hydrogen's Storefront client.
-       */
-      const {storefront} = createStorefrontClient({
-        cache,
-        waitUntil,
-        i18n: getLocaleFromRequest(request),
-        publicStorefrontToken: env.PUBLIC_STOREFRONT_API_TOKEN,
-        privateStorefrontToken: env.PRIVATE_STOREFRONT_API_TOKEN,
-        storeDomain: env.PUBLIC_STORE_DOMAIN,
-        storefrontId: env.PUBLIC_STOREFRONT_ID,
-        storefrontHeaders: getStorefrontHeaders(request),
-      });
-
-      /**
-       * Create a client for Customer Account API.
-       */
-      const customerAccount = createCustomerAccountClient({
-        waitUntil,
+      const appLoadContext = await createAppLoadContext(
         request,
-        session,
-        customerAccountId: env.PUBLIC_CUSTOMER_ACCOUNT_API_CLIENT_ID,
-        customerAccountUrl: env.PUBLIC_CUSTOMER_ACCOUNT_API_URL,
-      });
-
-      const cart = createCartHandler({
-        storefront,
-        customerAccount,
-        getCartId: cartGetIdDefault(request.headers),
-        setCartId: cartSetIdDefault(),
-      });
+        env,
+        executionContext,
+      );
 
       /**
        * Create a Remix request handler and pass
@@ -79,14 +43,7 @@ export default {
       const handleRequest = createRequestHandler({
         build: remixBuild,
         mode: process.env.NODE_ENV,
-        getLoadContext: () => ({
-          session,
-          waitUntil,
-          storefront,
-          customerAccount,
-          cart,
-          env,
-        }),
+        getLoadContext: () => appLoadContext,
       });
 
       const response = await handleRequest(request);

@@ -9,6 +9,7 @@ import type {
 } from '@shopify/hydrogen';
 import type {Storefront, CustomerAccount} from '~/lib/type';
 import type {AppSession} from '~/lib/session.server';
+import type {createAppLoadContext} from '~/lib/context';
 
 declare global {
   /**
@@ -35,14 +36,9 @@ declare module '@shopify/remix-oxygen' {
   /**
    * Declare local additions to the Remix loader context.
    */
-  export interface AppLoadContext {
-    waitUntil: ExecutionContext['waitUntil'];
-    session: AppSession;
-    storefront: Storefront;
-    customerAccount: CustomerAccount;
-    cart: HydrogenCart;
-    env: Env;
-  }
+
+  interface AppLoadContext
+    extends Awaited<ReturnType<typeof createAppLoadContext>> {}
 
   /**
    * Declare local additions to the Remix session data.
