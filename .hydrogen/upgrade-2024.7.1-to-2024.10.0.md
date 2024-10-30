@@ -1,6 +1,6 @@
 # Hydrogen upgrade guide: 2024.7.1 to 2024.10.0
 
-----
+---
 
 ## Features
 
@@ -9,24 +9,25 @@
 #### Step: 1. Update the getSitemapIndex at /app/routes/[sitemap.xml].tsx [#2589](https://github.com/Shopify/hydrogen/pull/2589)
 
 [#2589](https://github.com/Shopify/hydrogen/pull/2589)
+
 ```diff
 - import {unstable__getSitemapIndex as getSitemapIndex} from '@shopify/hydrogen';
 + import {getSitemapIndex} from '@shopify/hydrogen';
 ```
 
-
 #### Step: 2. Update the getSitemap at /app/routes/sitemap.$type.$page[.xml].tsx [#2589](https://github.com/Shopify/hydrogen/pull/2589)
 
 [#2589](https://github.com/Shopify/hydrogen/pull/2589)
+
 ```diff
 - import {unstable__getSitemap as getSitemap} from '@shopify/hydrogen';
 + import {getSitemap} from '@shopify/hydrogen';
 ```
 
-
 ### H2O compatibility date [#2380](https://github.com/Shopify/hydrogen/pull/2380)
 
 #### Check your project is working properly in an Oxygen deployment
+
 [#2380](https://github.com/Shopify/hydrogen/pull/2380)
 
 ### Simplified creation of app context. [#2333](https://github.com/Shopify/hydrogen/pull/2333)
@@ -34,6 +35,7 @@
 #### Step: 1. Create a app/lib/context file and use `createHydrogenContext` in it. [#2333](https://github.com/Shopify/hydrogen/pull/2333)
 
 [#2333](https://github.com/Shopify/hydrogen/pull/2333)
+
 ```.ts
 // in app/lib/context
 
@@ -68,6 +70,7 @@ export async function createAppLoadContext(
 #### Step: 2. Use `createAppLoadContext` method in server.ts Ensure to overwrite any options that is not using the default values in `createHydrogenContext` [#2333](https://github.com/Shopify/hydrogen/pull/2333)
 
 [#2333](https://github.com/Shopify/hydrogen/pull/2333)
+
 ```diff
 // in server.ts
 
@@ -126,6 +129,7 @@ export default {
 #### Step: 3. Use infer type for AppLoadContext in env.d.ts [#2333](https://github.com/Shopify/hydrogen/pull/2333)
 
 [#2333](https://github.com/Shopify/hydrogen/pull/2333)
+
 ```diff
 // in env.d.ts
 
@@ -143,16 +147,18 @@ export default {
 
 ```
 
-----
+---
 
-----
+---
 
 ## Fixes
 
 ### Make set up cookie banner by default to false [#2588](https://github.com/Shopify/hydrogen/pull/2588)
 
 #### If you are using Shopify's cookie banner to handle user consent in your app, you need to set `withPrivacyBanner: true` to the consent config. Without this update, the Shopify cookie banner will not appear.
+
 [#2588](https://github.com/Shopify/hydrogen/pull/2588)
+
 ```diff
   return defer({
     ...
@@ -167,12 +173,12 @@ export default {
   });
 ```
 
-
 ### Deprecate usages of product.options.values and use product.options.optionValues instead [#2585](https://github.com/Shopify/hydrogen/pull/2585)
 
 #### Step: 1. Update your product graphql query to use the new `optionValues` field [#2585](https://github.com/Shopify/hydrogen/pull/2585)
 
 [#2585](https://github.com/Shopify/hydrogen/pull/2585)
+
 ```diff
   const PRODUCT_FRAGMENT = `#graphql
     fragment Product on Product {
@@ -187,10 +193,10 @@ export default {
       }
 ```
 
-
 #### Step: 2. Update your `<VariantSelector>` to use the new `optionValues` field [#2585](https://github.com/Shopify/hydrogen/pull/2585)
 
 [#2585](https://github.com/Shopify/hydrogen/pull/2585)
+
 ```diff
   <VariantSelector
     handle={product.handle}
@@ -200,10 +206,10 @@ export default {
   >
 ```
 
-
 ### Update all cart mutation methods from createCartHandler to return cart warnings [#2572](https://github.com/Shopify/hydrogen/pull/2572)
 
 #### Check warnings for stock levels
+
 [#2572](https://github.com/Shopify/hydrogen/pull/2572)
 
 ### Update createWithCache to make it harder to accidentally cache undesired results [#2546](https://github.com/Shopify/hydrogen/pull/2546)
@@ -211,6 +217,7 @@ export default {
 #### Step: 1. request is now a mandatory prop when initializing createWithCache. [#2546](https://github.com/Shopify/hydrogen/pull/2546)
 
 [#2546](https://github.com/Shopify/hydrogen/pull/2546)
+
 ```diff
 // server.ts
 export default {
@@ -225,34 +232,34 @@ export default {
 +     const withCache = createWithCache({cache, waitUntil, request});
 ```
 
-
 #### Step: 2. New `withCache.fetch` is for caching simple fetch requests. This method caches the responses if they are OK responses, and you can pass `shouldCacheResponse`, `cacheKey`, etc. to modify behavior. `data` is the consumed body of the response (we need to consume to cache it). [#2546](https://github.com/Shopify/hydrogen/pull/2546)
 
 [#2546](https://github.com/Shopify/hydrogen/pull/2546)
-```ts
-  const withCache = createWithCache({cache, waitUntil, request});
 
-  const {data, response} = await withCache.fetch<{data: T; error: string}>(
-    'my-cms.com/api',
-    {
-      method: 'POST',
-      headers: {'Content-type': 'application/json'},
-      body,
-    },
-    {
-      cacheStrategy: CacheLong(),
-      // Cache if there are no data errors or a specific data that make this result not suited for caching
-      shouldCacheResponse: (result) => !result?.error,
-      cacheKey: ['my-cms', body],
-      displayName: 'My CMS query',
-    },
-  );
+```ts
+const withCache = createWithCache({cache, waitUntil, request});
+
+const {data, response} = await withCache.fetch<{data: T; error: string}>(
+  'my-cms.com/api',
+  {
+    method: 'POST',
+    headers: {'Content-type': 'application/json'},
+    body,
+  },
+  {
+    cacheStrategy: CacheLong(),
+    // Cache if there are no data errors or a specific data that make this result not suited for caching
+    shouldCacheResponse: (result) => !result?.error,
+    cacheKey: ['my-cms', body],
+    displayName: 'My CMS query',
+  },
+);
 ```
 
-
-#### Step: 3. The original `withCache` callback function is now `withCache.run`. This is useful to run *multiple* fetch calls and merge their responses, or run any arbitrary code. It caches anything you return, but you can throw if you don't want to cache anything. [#2546](https://github.com/Shopify/hydrogen/pull/2546)
+#### Step: 3. The original `withCache` callback function is now `withCache.run`. This is useful to run _multiple_ fetch calls and merge their responses, or run any arbitrary code. It caches anything you return, but you can throw if you don't want to cache anything. [#2546](https://github.com/Shopify/hydrogen/pull/2546)
 
 [#2546](https://github.com/Shopify/hydrogen/pull/2546)
+
 ```diff
   const withCache = createWithCache({cache, waitUntil, request});
 
@@ -277,11 +284,12 @@ export default {
   };
 ```
 
-
 ### Fix an infinite redirect when viewing the cached version of a Hydrogen site on Google Web Cache [#2334](https://github.com/Shopify/hydrogen/pull/2334)
 
 #### Update your entry.client.jsx file to include this check
+
 [#2334](https://github.com/Shopify/hydrogen/pull/2334)
+
 ```diff
 + if (!window.location.origin.includes("webcache.googleusercontent.com")) {
    startTransition(() => {

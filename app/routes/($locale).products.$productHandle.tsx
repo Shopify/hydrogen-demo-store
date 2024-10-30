@@ -275,7 +275,9 @@ export function ProductForm({
       <div className="grid gap-4">
         <VariantSelector
           handle={product.handle}
-          options={product.options.filter((option) => option.optionValues.length > 1)}
+          options={product.options.filter(
+            (option) => option.optionValues.length > 1,
+          )}
           variants={variants}
         >
           {({option}) => {
