@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.2",
-    "@playwright/test": "^1.40.1",
+    "@playwright/test": "^1.48.2",
     "@remix-run/dev": "^2.13.1",
     "@remix-run/eslint-config": "^2.13.1",
     "@shopify/eslint-plugin": "^42.0.1",
@@ -54,6 +54,7 @@
     "@tailwindcss/typography": "^0.5.9",
     "@total-typescript/ts-reset": "^0.4.2",
     "@types/eslint": "^8.4.10",
+    "@types/node": "^22.8.4",
     "@types/react": "^18.2.22",
     "@types/react-dom": "^18.2.7",
     "cross-env": "^7.0.3",
