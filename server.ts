@@ -62,7 +62,7 @@ export default {
         request,
         session,
         customerAccountId: env.PUBLIC_CUSTOMER_ACCOUNT_API_CLIENT_ID,
-        customerAccountUrl: env.PUBLIC_CUSTOMER_ACCOUNT_API_URL,
+        shopId: env.SHOP_ID,
       });
 
       const cart = createCartHandler({
