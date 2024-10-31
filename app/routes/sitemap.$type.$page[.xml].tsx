@@ -1,6 +1,6 @@
 import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
-
 import {getSitemap} from '@shopify/hydrogen';
+
 import {countries} from '~/data/countries';
 
 const locales = Object.keys(countries).filter((k) => k !== 'default');
