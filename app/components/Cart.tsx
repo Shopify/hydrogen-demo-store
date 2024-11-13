@@ -23,6 +23,7 @@ import {Link} from '~/components/Link';
 import {IconRemove} from '~/components/Icon';
 import {FeaturedProducts} from '~/components/FeaturedProducts';
 import {getInputStyleClasses} from '~/lib/utils';
+import {useCartPath} from '~/hooks/useCartPath';
 
 type Layouts = 'page' | 'drawer';
 
@@ -137,9 +138,11 @@ function UpdateDiscountForm({
   discountCodes?: string[];
   children: React.ReactNode;
 }) {
+  const cartPath = useCartPath();
+
   return (
     <CartForm
-      route="/cart"
+      route={cartPath}
       action={CartForm.ACTIONS.DiscountCodesUpdate}
       inputs={{
         discountCodes: discountCodes || [],
@@ -306,9 +309,10 @@ function CartLineItem({line}: {line: CartLine}) {
 }
 
 function ItemRemoveButton({lineId}: {lineId: CartLine['id']}) {
+  const cartPath = useCartPath();
   return (
     <CartForm
-      route="/cart"
+      route={cartPath}
       action={CartForm.ACTIONS.LinesRemove}
       inputs={{
         lineIds: [lineId],
@@ -390,9 +394,11 @@ function UpdateCartButton({
   children: React.ReactNode;
   lines: CartLineUpdateInput[];
 }) {
+  const cartPath = useCartPath();
+
   return (
     <CartForm
-      route="/cart"
+      route={cartPath}
       action={CartForm.ACTIONS.LinesUpdate}
       inputs={{
         lines,

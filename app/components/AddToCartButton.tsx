@@ -1,8 +1,9 @@
 import type {CartLineInput} from '@shopify/hydrogen/storefront-api-types';
 import {CartForm} from '@shopify/hydrogen';
-import type {FetcherWithComponents} from '@remix-run/react';
+import {type FetcherWithComponents} from '@remix-run/react';
 
 import {Button} from '~/components/Button';
+import {useCartPath} from '~/hooks/useCartPath';
 
 export function AddToCartButton({
   children,
@@ -21,9 +22,11 @@ export function AddToCartButton({
   disabled?: boolean;
   [key: string]: any;
 }) {
+  const cartPath = useCartPath();
+
   return (
     <CartForm
-      route="/cart"
+      route={cartPath}
       inputs={{
         lines,
       }}
