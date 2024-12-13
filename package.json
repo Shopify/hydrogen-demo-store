@@ -24,8 +24,8 @@
     "@remix-run/node": "^2.13.1",
     "@remix-run/react": "^2.13.1",
     "@remix-run/server-runtime": "^2.13.1",
-    "@shopify/cli": "^3.69.4",
-    "@shopify/hydrogen": "^2024.10.0",
+    "@shopify/cli": "^3.72.1",
+    "@shopify/hydrogen": "^2024.10.1",
     "@shopify/remix-oxygen": "^2.0.9",
     "clsx": "^1.2.1",
     "cross-env": "^7.0.3",
@@ -71,6 +71,6 @@
     "vite-tsconfig-paths": "^4.3.1"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

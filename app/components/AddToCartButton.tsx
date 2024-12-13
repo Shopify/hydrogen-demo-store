@@ -1,5 +1,4 @@
-import type {CartLineInput} from '@shopify/hydrogen/storefront-api-types';
-import {CartForm} from '@shopify/hydrogen';
+import {CartForm, type OptimisticCartLineInput} from '@shopify/hydrogen';
 import type {FetcherWithComponents} from '@remix-run/react';
 
 import {Button} from '~/components/Button';
@@ -14,7 +13,7 @@ export function AddToCartButton({
   ...props
 }: {
   children: React.ReactNode;
-  lines: CartLineInput[];
+  lines: Array<OptimisticCartLineInput>;
   className?: string;
   variant?: 'primary' | 'secondary' | 'inline';
   width?: 'auto' | 'full';
