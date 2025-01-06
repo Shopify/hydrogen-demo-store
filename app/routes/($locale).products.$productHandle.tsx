@@ -22,7 +22,7 @@ import type {
   ProductQuery,
   ProductVariantFragmentFragment,
 } from 'storefrontapi.generated';
-import {Heading, Section, Text} from '~/components/Text';
+import {PageHeader,Heading, Section, Text} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {Button} from '~/components/Button';
 import {AddToCartButton} from '~/components/AddToCartButton';
@@ -35,6 +35,10 @@ import {seoPayload} from '~/lib/seo.server';
 import type {Storefront} from '~/lib/type';
 import {routeHeaders} from '~/data/cache';
 import {MEDIA_FRAGMENT, PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
+import {CustomProductForm} from '~/components/CustomProduct/CustomProductForm';
+import {SlashIcon} from '@heroicons/react/24/solid';
+import {CustomProductGallery} from '~/components/CustomProductGallery';
+import {FeaturedCollections} from '~/components/FeaturedCollections';
 
 export const headers = routeHeaders;
 
@@ -129,7 +133,49 @@ function loadDeferredData({params, context}: LoaderFunctionArgs) {
     },
   });
 
-  return {variants};
+  // 修改: 将collection查询结果存储为Promise
+  const collectionQueryPromise = context.storefront.query(Collection_Handle_QUERY, {
+    variables: {
+      handle: productHandle,
+      country: context.storefront.i18n.country,
+      language: context.storefront.i18n.language,
+    },
+  });
+  // 处理collection数据的Promise
+  const collectionDataPromise = collectionQueryPromise.then(({product}) => {
+    const productMetafields = product?.collections?.edges[0]?.node?.products?.nodes || [];
+    const beforeFilters = product?.collections?.nodes[0]?.products.filters || [];
+      // 转换filters格式
+    const filters = beforeFilters
+      // 重命名字段
+      .map(filter => ({
+        name: filter.label,
+        optionValues: filter.values.map(value => ({
+          name: value.label
+        }))
+      }))
+      // 过滤掉optionValues长度为1的filter
+      .filter(filter => filter.optionValues.length > 1);
+
+    // 获取filters中的名称（转为小写以便比较）
+    const filterNames = filters.map(filter => filter.name.toLowerCase());
+    // 过滤productMetafields中的空值，只获取filters中存在的key；
+    const filteredMetafields = productMetafields.map(product => ({
+      metafields: product.metafields
+        .filter(metafield => metafield != null)
+        .filter(metafield => filterNames.includes(metafield.key)),
+      handle: product.handle
+    }));
+    return {
+      filters,
+      filteredMetafields
+    };
+  });
+  
+  return {
+    variants,
+    collectionDataPromise,
+  };
 }
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {
@@ -157,40 +203,75 @@ function redirectToFirstVariant({
 }
 
 export default function Product() {
-  const {product, shop, recommended, variants} = useLoaderData<typeof loader>();
+  const {product, shop, recommended, variants, collectionDataPromise } = useLoaderData<typeof loader>();
   const {media, title, vendor, descriptionHtml} = product;
   const {shippingPolicy, refundPolicy} = shop;
-
+  const collection = product.collections.nodes[0];
   return (
     <>
-      <Section className="px-0 md:px-8 lg:px-12">
-        <div className="grid items-start md:gap-6 lg:gap-20 md:grid-cols-2 lg:grid-cols-3">
-          <ProductGallery
+      <Section className="px-0 md:px-8 lg:px-12 max-w-custom mx-auto">
+      {!!collection && (
+          <nav className="mb-4 px-6 md:px-0" aria-label="Breadcrumb">
+            <ol className="flex items-center space-x-2">
+              <li>
+                <div className="flex items-center text-sm">
+                  <Link
+                    to={'/'}
+                    className="font-medium text-gray-500 hover:text-gray-900"
+                  >
+                    Home
+                  </Link>
+                  <SlashIcon className="ml-2 h-5 w-5 flex-shrink-0 text-gray-300 " />
+                </div>
+              </li>
+              <li>
+                <div className="flex items-center text-sm">
+                  <Link
+                    to={'/collections/' + collection.handle}
+                    className="font-medium text-gray-500 hover:text-gray-900"
+                  >
+                    {/* romove html on title */}
+                    {collection.title.replace(/(<([^>]+)>)/gi, '')}
+                  </Link>
+                </div>
+              </li>
+            </ol>
+          </nav>
+        )}
+        <div className="grid items-start md:gap-6 lg:gap-20 md:grid-cols-2 lg:grid-cols-2">
+          <CustomProductGallery
             media={media.nodes}
-            className="w-full lg:col-span-2"
+            className="w-full lg:col-span-1"
           />
-          <div className="sticky md:-mb-nav md:top-nav md:-translate-y-nav md:h-screen md:pt-nav hiddenScroll md:overflow-y-scroll">
-            <section className="flex flex-col w-full max-w-xl gap-8 p-6 md:mx-auto md:max-w-sm md:px-0">
+          <div className="sticky md:-mb-nav md:top-nav md:-translate-y-nav md:min-h-screen md:pt-nav hiddenScroll md:overflow-y-scroll">
+            <section className="flex flex-col w-full max-w-xl gap-8 p-6 md:mx-auto md:max-w-full md:px-0">
               <div className="grid gap-2">
                 <Heading as="h1" className="whitespace-normal">
                   {title}
                 </Heading>
-                {vendor && (
-                  <Text className={'opacity-50 font-medium'}>{vendor}</Text>
-                )}
               </div>
-              <Suspense fallback={<ProductForm variants={[]} />}>
-                <Await
-                  errorElement="There was a problem loading related products"
-                  resolve={variants}
-                >
-                  {(resp) => (
-                    <ProductForm
-                      variants={resp.product?.variants.nodes || []}
-                    />
-                  )}
-                </Await>
-              </Suspense>
+              {product.customizable_size?.value === "true" ? (
+                <Suspense fallback={<CustomProductForm product={product} facets={[]} productMetafields={[]} />}>
+                  <Await resolve={collectionDataPromise}>
+                    {(data) => (
+                      <CustomProductForm 
+                        product={product}
+                        facets={data.filters}
+                        productMetafields={data.filteredMetafields}
+                      />
+                    )}
+                  </Await>
+                </Suspense>
+              ) : (
+                <Suspense fallback={<ProductForm variants={[]} />}>
+                  <Await
+                    errorElement="There was a problem loading related products"
+
+                    resolve={variants}
+                  >{(resp) => (<ProductForm variants={resp.product?.variants.nodes || []} />)}
+                  </Await>
+                </Suspense>
+              )}
               <div className="grid gap-4 py-4">
                 {descriptionHtml && (
                   <ProductDetail
@@ -217,6 +298,20 @@ export default function Product() {
           </div>
         </div>
       </Section>
+      <PageHeader heading={"Product Description"} className="flex items-baseline justify-center w-full">
+        {descriptionHtml && (
+          <div className="flex items-baseline justify-between w-full">
+            <div 
+              dangerouslySetInnerHTML={{__html: descriptionHtml}} 
+              className="inline-block prose prose-sm max-w-custom"  // 添加prose类来美化HTML内容
+              />
+          </div>
+        )}
+      </PageHeader>
+      <FeaturedCollections
+                  collections={product.collections}
+                  title="Collections"
+                />
       <Suspense fallback={<Skeleton className="h-32" />}>
         <Await
           errorElement="There was a problem loading related products"
@@ -533,6 +628,73 @@ const PRODUCT_QUERY = `#graphql
       handle
       descriptionHtml
       description
+      collections(first: 1) {
+        nodes {
+          id
+          title
+          handle
+        }
+      }
+      customizable_size: metafield(namespace: "custom", key:"customizable_size") {
+        id
+        value
+        namespace
+        key
+      }
+      form_type: metafield(namespace: "custom", key:"form_type") {
+        id
+        value
+        namespace
+        key
+      }
+      material: metafield(namespace: "custom", key:"material") {
+        id
+        value
+        namespace
+        key
+      }
+      opacity: metafield(namespace: "custom", key:"opacity") {
+        id
+        value
+        namespace
+        key
+      }
+      color: metafield(namespace: "custom", key:"color") {
+        id
+        value
+        namespace
+        key
+      }
+      thickness: metafield(namespace: "custom", key:"thickness") {
+        id
+        value
+        namespace
+        key
+      }
+      diameter: metafield(namespace: "custom", key:"diameter") {
+        id
+        value
+        namespace
+        key
+      }
+      machining_precision: metafield(namespace: "custom", key:"machining_precision") {
+        id
+        value
+        namespace
+        key
+      }
+      density: metafield(namespace: "custom", key:"density") {
+        id
+        value
+        namespace
+        key
+      }
+      unit_price: metafield(namespace: "custom", key:"unit_price") {
+        id
+        value
+        namespace
+        key
+      }
       options {
         name
         optionValues {
@@ -542,7 +704,7 @@ const PRODUCT_QUERY = `#graphql
       selectedVariant: variantBySelectedOptions(selectedOptions: $selectedOptions, ignoreUnknownOptions: true, caseInsensitiveMatch: true) {
         ...ProductVariantFragment
       }
-      media(first: 7) {
+      media(first: 8) {
         nodes {
           ...Media
         }
@@ -610,6 +772,43 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
     }
   }
   ${PRODUCT_CARD_FRAGMENT}
+` as const;
+
+export const Collection_Handle_QUERY = `#graphql
+  query collectionHandle(
+    $country: CountryCode
+    $language: LanguageCode
+    $handle: String!
+  ) @inContext(country: $country, language: $language){
+    product(handle: $handle) {
+      collections(first: 1) {
+        nodes {
+          handle
+          products(first: 1) {
+            filters {
+              label
+              values {
+                label
+              }
+            }
+          }
+        }
+        edges {
+          node {
+            products(first: 250) {
+              nodes {
+                metafields(identifiers: [{key: "opacity", namespace: "custom"},{key: "material", namespace: "custom"},{key: "color", namespace: "custom"},{key: "thickness", namespace: "custom"},{key: "diameter", namespace: "custom"}]) {
+                  key
+                  value
+                }
+                handle
+              }
+            }
+          }
+      }
+      }
+    }
+  }
 ` as const;
 
 async function getRecommendedProducts(
