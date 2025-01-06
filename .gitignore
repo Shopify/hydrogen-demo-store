@@ -11,5 +11,5 @@ node_modules
 /test-results/
 /playwright-report/
 /playwright/.cache/
-# Shopify API generated types
-*.generated.d.ts
+customer-accountapi.generated.d.ts
+storefrontapi.generated.d.ts
