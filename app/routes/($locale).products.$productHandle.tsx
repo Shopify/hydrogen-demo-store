@@ -111,7 +111,7 @@ async function loadCriticalData({
  * Make sure to not throw any errors here, as it will cause the page to 500.
  */
 function loadDeferredData(args: LoaderFunctionArgs) {
-  // Put any API calls that is not critical to be available on first page render
+  // Put any API calls that are not critical to be available on first page render
   // For example: product reviews, product recommendations, social feeds.
 
   return {};
