@@ -87,14 +87,12 @@ type ProductRequiredFields = Pick<
   Product,
   'title' | 'description' | 'vendor' | 'seo'
 > & {
-  variants: {
-    nodes: Array<
-      Pick<
-        ProductVariant,
-        'sku' | 'price' | 'selectedOptions' | 'availableForSale'
-      >
-    >;
-  };
+  variants: Array<
+    Pick<
+      ProductVariant,
+      'sku' | 'price' | 'selectedOptions' | 'availableForSale'
+    >
+  >;
 };
 
 function productJsonLd({
@@ -107,7 +105,7 @@ function productJsonLd({
   url: Request['url'];
 }): SeoConfig['jsonLd'] {
   const origin = new URL(url).origin;
-  const variants = product.variants.nodes;
+  const variants = product.variants;
   const description = truncate(
     product?.seo?.description ?? product?.description,
   );
