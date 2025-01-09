@@ -55,6 +55,15 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
   return false;
 };
 
+/**
+ * The link to the main stylesheet is purposely not in this list. Instead, it is added
+ * in the Layout function.
+ *
+ * This is to avoid a development bug where after an edit/save, navigating to another
+ * link will cause page rendering error "failed to execute 'insertBefore' on 'Node'".
+ *
+ * This is a workaround until this is fixed in the foundational library.
+ */
 export const links: LinksFunction = () => {
   return [
     {
