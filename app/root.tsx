@@ -55,9 +55,17 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
   return false;
 };
 
+/**
+ * The link to the main stylesheet is purposely not in this list. Instead, it is added
+ * in the Layout function.
+ *
+ * This is to avoid a development bug where after an edit/save, navigating to another
+ * link will cause page rendering error "failed to execute 'insertBefore' on 'Node'".
+ *
+ * This is a workaround until this is fixed in the foundational library.
+ */
 export const links: LinksFunction = () => {
   return [
-    {rel: 'stylesheet', href: styles},
     {
       rel: 'preconnect',
       href: 'https://cdn.shopify.com',
@@ -142,6 +150,7 @@ function Layout({children}: {children?: React.ReactNode}) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="msvalidate.01" content="A352E6A0AF9A652267361BBB572B8468" />
+        <link rel="stylesheet" href={styles}></link>
         <Meta />
         <Links />
       </head>
