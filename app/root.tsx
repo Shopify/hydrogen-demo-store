@@ -57,7 +57,6 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
 
 export const links: LinksFunction = () => {
   return [
-    {rel: 'stylesheet', href: styles},
     {
       rel: 'preconnect',
       href: 'https://cdn.shopify.com',
@@ -142,6 +141,7 @@ function Layout({children}: {children?: React.ReactNode}) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="msvalidate.01" content="A352E6A0AF9A652267361BBB572B8468" />
+        <link rel="stylesheet" href={styles}></link>
         <Meta />
         <Links />
       </head>
