@@ -186,6 +186,9 @@ function getAppliedFilterLink(
     const fullKey = FILTER_URL_PREFIX + key;
     paramsClone.delete(fullKey, JSON.stringify(value));
   });
+  // Restart pagination.
+  paramsClone.delete('direction');
+  paramsClone.delete('cursor');
   return `${location.pathname}?${paramsClone.toString()}`;
 }
 
@@ -194,17 +197,26 @@ function getSortLink(
   params: URLSearchParams,
   location: Location,
 ) {
-  params.set('sort', sort);
-  return `${location.pathname}?${params.toString()}`;
+  const paramsClone = new URLSearchParams(params);
+  paramsClone.set('sort', sort);
+  // Restart pagination.
+  paramsClone.delete('direction');
+  paramsClone.delete('cursor');
+  return `${location.pathname}?${paramsClone.toString()}`;
 }
 
 function getFilterLink(
   rawInput: string | ProductFilter,
   params: URLSearchParams,
-  location: ReturnType<typeof useLocation>,
+  location: Location,
 ) {
   const paramsClone = new URLSearchParams(params);
+  // Restart pagination.
+  // Otherwise applying filters after paginating to the end results in an empty page.
+  paramsClone.delete('direction');
+  paramsClone.delete('cursor');
   const newParams = filterInputToParams(rawInput, paramsClone);
+
   return `${location.pathname}?${newParams.toString()}`;
 }
 
@@ -350,10 +362,11 @@ export default function SortMenu() {
           <Menu.Item key={item.label}>
             {() => (
               <Link
+                to={getSortLink(item.key, params, location)}
+                prefetch="intent"
                 className={`block text-sm pb-2 px-3 ${
                   activeItem?.key === item.key ? 'font-bold' : 'font-normal'
                 }`}
-                to={getSortLink(item.key, params, location)}
               >
                 {item.label}
               </Link>
