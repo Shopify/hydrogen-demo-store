@@ -99,6 +99,7 @@ function CollectionCard({
   return (
     <Link
       prefetch="viewport"
+      data-shopify-collection-link
       to={`/collections/${collection.handle}`}
       className="grid gap-4"
     >

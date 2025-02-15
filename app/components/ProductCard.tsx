@@ -48,6 +48,7 @@ export function ProductCard({
   return (
     <div className="flex flex-col gap-2">
       <Link
+        data-shopify-product-link
         onClick={onClick}
         to={`/products/${product.handle}`}
         prefetch="viewport"
@@ -95,6 +96,7 @@ export function ProductCard({
       </Link>
       {quickAdd && firstVariant.availableForSale && (
         <AddToCartButton
+          data-shopify-product-add-to-cart
           lines={[
             {
               quantity: 1,

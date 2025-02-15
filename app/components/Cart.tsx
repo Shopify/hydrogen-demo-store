@@ -188,7 +188,7 @@ function CartCheckoutActions({checkoutUrl}: {checkoutUrl: string}) {
 
   return (
     <div className="flex flex-col mt-2">
-      <a href={checkoutUrl} target="_self">
+      <a data-shopify-cart-checkout-link href={checkoutUrl} target="_self">
         <Button as="span" width="full">
           Continue to Checkout
         </Button>
