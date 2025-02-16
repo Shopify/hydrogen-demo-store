@@ -1,6 +1,6 @@
 import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {getSitemap} from '@shopify/hydrogen';
 
-import {getSitemap} from 'app/lib/sitemap';
 import {countries} from '~/data/countries';
 
 const locales = Object.keys(countries).filter((k) => k !== 'default');
@@ -18,12 +18,11 @@ export async function loader({
     locales,
     getLink: ({type, baseUrl, handle, locale}) => {
       if (!locale) return `${baseUrl}/${type}/${handle}`;
-      return `${baseUrl}${locale}/${type}/${handle}`;
+      return `${baseUrl}/${locale}/${type}/${handle}`;
     },
   });
 
-  response.headers.set('Oxygen-Cache-Control', `max-age=${60 * 60 * 24}`);
-  response.headers.set('Vary', 'Accept-Encoding, Accept-Language');
+  response.headers.set('Cache-Control', `max-age=${60 * 60 * 24}`);
 
   return response;
 }
