@@ -17,8 +17,11 @@ export async function loader({
     params,
     locales,
     getLink: ({type, baseUrl, handle, locale}) => {
-      if (!locale) return `${baseUrl}/${type}/${handle}`;
-      return `${baseUrl}${locale}/${type}/${handle}`;
+      // Make sure the generated sitemap urls are reflective of the routes
+      const typeUrl = type === 'articles' ? 'journal' : type;
+
+      if (!locale) return `${baseUrl}/${typeUrl}/${handle}`;
+      return `${baseUrl}${locale}/${typeUrl}/${handle}`;
     },
   });
 
