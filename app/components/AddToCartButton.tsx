@@ -37,6 +37,7 @@ export function AddToCartButton({
               width={width}
               variant={variant}
               className={className}
+              data-shopify-product-add-to-cart
               disabled={disabled ?? fetcher.state !== 'idle'}
               {...props}
             >
