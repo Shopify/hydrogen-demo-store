@@ -49,9 +49,9 @@ export const countries: Localizations = {
     country: 'CY',
     currency: 'EUR',
   },
-  '/en-de': {
+  '/de-de': {
     label: 'Germany (EUR €)',
-    language: 'EN',
+    language: 'DE',
     country: 'DE',
     currency: 'EUR',
   },
