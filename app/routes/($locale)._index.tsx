@@ -10,6 +10,7 @@ import {getSeoMeta} from '@shopify/hydrogen';
 import {Hero} from '~/components/Hero';
 import {FeaturedCollections} from '~/components/FeaturedCollections';
 import {ProductSwimlane} from '~/components/ProductSwimlane';
+import {RecentlyViewedMock} from '~/components/RecentlyViewedMock';
 import {MEDIA_FRAGMENT, PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
 import {getHeroPlaceholder} from '~/lib/placeholders';
 import {seoPayload} from '~/lib/seo.server';
@@ -129,11 +130,26 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
       return null;
     });
 
+  const recentlyViewedProducts = context.storefront
+    .query(RECENTLY_VIEWED_MOCK_QUERY, {
+      variables: {
+        country,
+        language,
+      },
+    })
+    .catch((error) => {
+      // Log query errors, but don't throw them so the page can still render
+      // eslint-disable-next-line no-console
+      console.error(error);
+      return null;
+    });
+
   return {
     featuredProducts,
     secondaryHero,
     featuredCollections,
     tertiaryHero,
+    recentlyViewedProducts,
   };
 }
 
@@ -148,6 +164,7 @@ export default function Homepage() {
     tertiaryHero,
     featuredCollections,
     featuredProducts,
+    recentlyViewedProducts,
   } = useLoaderData<typeof loader>();
 
   // TODO: skeletons vs placeholders
@@ -157,6 +174,10 @@ export default function Homepage() {
     <>
       {primaryHero && (
         <Hero {...primaryHero} height="full" top loading="eager" />
+      )}
+
+      {recentlyViewedProducts && (
+        <RecentlyViewedMock recentlyViewedProducts={recentlyViewedProducts} />
       )}
 
       {featuredProducts && (
@@ -320,4 +341,16 @@ export const FEATURED_COLLECTIONS_QUERY = `#graphql
       }
     }
   }
+` as const;
+
+export const RECENTLY_VIEWED_MOCK_QUERY = `#graphql
+  query recentlyViewedMock($country: CountryCode, $language: LanguageCode)
+  @inContext(country: $country, language: $language) {
+    products(first: 4, sortKey: UPDATED_AT, reverse: true) {
+      nodes {
+        ...ProductCard
+      }
+    }
+  }
+  ${PRODUCT_CARD_FRAGMENT}
 ` as const;
