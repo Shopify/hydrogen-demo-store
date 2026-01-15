@@ -1,11 +1,7 @@
 import {useRef, Suspense} from 'react';
 import {Disclosure, Listbox} from '@headlessui/react';
-import {
-  defer,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData, Await} from '@remix-run/react';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData, Await} from 'react-router';
 import {
   getSeoMeta,
   Money,
@@ -52,7 +48,7 @@ export async function loader(args: LoaderFunctionArgs) {
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  return defer({...deferredData, ...criticalData});
+  return {...deferredData, ...criticalData};
 }
 
 /**
@@ -259,10 +255,10 @@ export function ProductForm({
                         <Listbox.Button
                           ref={closeRef}
                           className={clsx(
-                            'flex items-center justify-between w-full py-3 px-4 border border-primary',
+                            'flex items-center justify-between w-full py-3 px-4 border border-primary/30 rounded transition-colors',
                             open
-                              ? 'rounded-b md:rounded-t md:rounded-b-none'
-                              : 'rounded',
+                              ? 'bg-primary/5 text-primary rounded-b md:rounded-t md:rounded-b-none'
+                              : 'bg-contrast text-primary',
                           )}
                         >
                           <span>
@@ -275,8 +271,8 @@ export function ProductForm({
                         </Listbox.Button>
                         <Listbox.Options
                           className={clsx(
-                            'border-primary bg-contrast absolute bottom-12 z-30 grid h-48 w-full overflow-y-scroll rounded-t border px-2 py-2 transition-[max-height] duration-150 sm:bottom-auto md:rounded-b md:rounded-t-none md:border-t-0 md:border-b',
-                            open ? 'max-h-48' : 'max-h-0',
+                            'border-primary/30 bg-contrast absolute bottom-12 z-30 grid h-48 w-full overflow-y-scroll rounded-t border px-2 py-2 transition-all duration-150 shadow-xl sm:bottom-auto md:rounded-b md:rounded-t-none md:border-t-0 md:border-b',
+                            open ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0',
                           )}
                         >
                           {option.optionValues
@@ -300,8 +296,10 @@ export function ProductForm({
                                     to={`/products/${handle}?${variantUriQuery}`}
                                     preventScrollReset
                                     className={clsx(
-                                      'text-primary w-full p-2 transition rounded flex justify-start items-center text-left cursor-pointer',
-                                      selected && 'bg-primary/10',
+                                      'w-full p-3 transition rounded flex justify-start items-center text-left cursor-pointer border border-transparent',
+                                      selected
+                                        ? 'bg-primary text-contrast border-primary'
+                                        : 'bg-contrast text-primary hover:border-primary/30',
                                     )}
                                     onClick={() => {
                                       if (!closeRef?.current) return;
@@ -342,9 +340,13 @@ export function ProductForm({
                       prefetch="intent"
                       replace
                       className={clsx(
-                        'leading-none py-1 border-b-[1.5px] cursor-pointer transition-all duration-200',
-                        selected ? 'border-primary/50' : 'border-primary/0',
-                        available ? 'opacity-100' : 'opacity-50',
+                        'leading-none py-2 px-4 border rounded-full cursor-pointer text-sm font-medium transition-all duration-200',
+                        selected
+                          ? 'bg-primary text-contrast border-primary'
+                          : 'bg-contrast text-primary border-primary/20',
+                        available
+                          ? 'opacity-100'
+                          : 'opacity-40 cursor-not-allowed',
                       )}
                     >
                       <ProductOptionSwatch swatch={swatch} name={name} />

@@ -2,8 +2,8 @@ import formsPlugin from '@tailwindcss/forms';
 import typographyPlugin from '@tailwindcss/typography';
 
 /** @type {import('tailwindcss').Config} */
-export default {
-  content: ['./app/**/*.{js,ts,jsx,tsx}'],
+const config = {
+  content: ['./app/**/*.{js,ts,jsx,tsx}', './app/styles/**/*.{css}'],
   theme: {
     extend: {
       colors: {
@@ -62,3 +62,5 @@ export default {
   },
   plugins: [formsPlugin, typographyPlugin],
 };
+
+export default config;

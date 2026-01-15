@@ -81,7 +81,6 @@
 - Support Remix Hot Module Replacement (HMR) and Hot Data Revalidation (HDR). ([#1187](https://github.com/Shopify/hydrogen/pull/1187)) by [@frandiox](https://github.com/frandiox)
 
   Start using it with the following changes to your project:
-
   1. Upgrade to the latest Hydrogen version and Remix 1.19.1.
 
   2. Enable the v2 dev server in `remix.config.js`:
@@ -208,12 +207,10 @@
 ### Patch Changes
 
 - Function and component for cart management: ([#786](https://github.com/Shopify/hydrogen/pull/786)) by [@wizardlyhel](https://github.com/wizardlyhel)
-
   - `createCartHandler` - Creates an object instance that simplifies cart operations such as add/update/remove from cart.
   - `CartForm` - A form component that helps you sets up form inputs for cart handler.
 
   **Documentation:**
-
   - Updated [how-to guides](https://shopify.dev/docs/custom-storefronts/hydrogen/cart)
   - [`createCartHandler`](https://shopify.dev/docs/api/hydrogen/2023-04/utilities/createcarthandler)
   - [`CartForm`](https://shopify.dev/docs/api/hydrogen/2023-04/components/cartform)
@@ -343,7 +340,6 @@
 - Adopt Remix [`v2_meta`](https://remix.run/docs/en/main/route/meta#metav2) future flag ([#738](https://github.com/Shopify/hydrogen/pull/738)) by [@wizardlyhel](https://github.com/wizardlyhel)
 
   ### `v2_meta` migration steps
-
   1. For any routes that you used `meta` route export, convert it to the `V2_MetaFunction` equivalent. Notice that the package name in the import statement has also changed to `'@remix-run/react'`:
 
      ```diff
@@ -506,7 +502,6 @@
 - Adopt Remix [`unstable_tailwind`](https://remix.run/docs/en/1.15.0/guides/styling#built-in-tailwind-support) and [`unstable_postcss`](https://remix.run/docs/en/1.15.0/guides/styling#built-in-postcss-support) future flags for the Demo Store template. ([#751](https://github.com/Shopify/hydrogen/pull/751)) by [@frandiox](https://github.com/frandiox)
 
   ### `unstable_tailwind` and `unstable_postcss` migration steps
-
   1. Move the file `<root>/styles/app.css` to `<root>/app/styles/app.css`, and remove it from `.gitignore`.
 
   2. Add `"browserslist": ["defaults"]` to your `package.json`, or your preferred [value from Browserslist](https://browsersl.ist/).
@@ -546,7 +541,6 @@
 - Bump internal Remix dependencies to 1.15.0. ([#728](https://github.com/Shopify/hydrogen/pull/728)) by [@wizardlyhel](https://github.com/wizardlyhel)
 
   Recommendations to follow:
-
   - Upgrade all the Remix packages in your app to 1.15.0.
   - Enable Remix v2 future flags at your earliest convenience following [the official guide](https://remix.run/docs/en/1.15.0/pages/v2).
 
@@ -562,7 +556,6 @@
 - Adopt Remix [`v2_errorBoundary`](https://remix.run/docs/en/release-next/route/error-boundary-v2) future flag ([#729](https://github.com/Shopify/hydrogen/pull/729)) by [@wizardlyhel](https://github.com/wizardlyhel)
 
   ### `v2_errorBoundary` migration steps
-
   1. Remove all `CatchBoundary` route exports
 
   2. Handle route level errors with `ErrorBoundary`

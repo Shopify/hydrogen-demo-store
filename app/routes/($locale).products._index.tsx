@@ -1,9 +1,5 @@
-import {
-  json,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData} from 'react-router';
 import invariant from 'tiny-invariant';
 import {
   Pagination,
@@ -57,10 +53,10 @@ export async function loader({
     },
   });
 
-  return json({
+  return {
     products: data.products,
     seo,
-  });
+  };
 }
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {

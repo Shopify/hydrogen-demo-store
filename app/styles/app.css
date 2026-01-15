@@ -12,7 +12,7 @@
   --font-size-lead: 1.125rem; /* text-lg */
   --font-size-heading: 2rem; /* text-2xl */
   --font-size-display: 3rem; /* text-4xl */
-  --color-shop-pay: #5a31f4;
+  --color-shop-pay: 90 49 244;
   --shop-pay-button--width: 100%; /* Sets the width for the shop-pay-button web component */
   --height-nav: 3rem;
   --screen-height: 100vh;
@@ -89,17 +89,13 @@ shop-pay-button {
     @apply border-b;
   }
 
-  .prose {
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-      &:first-child {
-        @apply mt-0;
-      }
-    }
+  .prose h1:first-child,
+  .prose h2:first-child,
+  .prose h3:first-child,
+  .prose h4:first-child,
+  .prose h5:first-child,
+  .prose h6:first-child {
+    @apply mt-0;
   }
 }
 

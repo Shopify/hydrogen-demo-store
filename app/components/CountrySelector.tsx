@@ -1,4 +1,4 @@
-import {useFetcher, useLocation, useRouteLoaderData} from '@remix-run/react';
+import {useFetcher, useLocation, useRouteLoaderData} from 'react-router';
 import {useCallback, useEffect, useRef} from 'react';
 import {useInView} from 'react-intersection-observer';
 import clsx from 'clsx';

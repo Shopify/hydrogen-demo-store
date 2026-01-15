@@ -1,10 +1,10 @@
-import {useParams, Form, Await, useRouteLoaderData} from '@remix-run/react';
+import {useParams, Form, Await, useRouteLoaderData} from 'react-router';
 import useWindowScroll from 'react-use/esm/useWindowScroll';
 import {Disclosure} from '@headlessui/react';
 import {Suspense, useEffect, useMemo} from 'react';
 import {CartForm} from '@shopify/hydrogen';
 
-import {type LayoutQuery} from 'storefrontapi.generated';
+import type {LayoutQuery} from 'storefrontapi.generated';
 import {Text, Heading, Section} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {Cart} from '~/components/Cart';

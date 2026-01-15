@@ -1,9 +1,5 @@
-import {
-  defer,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {Await, Form, useLoaderData} from '@remix-run/react';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {Await, Form, useLoaderData} from 'react-router';
 import {Suspense} from 'react';
 import {
   Pagination,
@@ -64,14 +60,14 @@ export async function loader({
     },
   });
 
-  return defer({
+  return {
     seo,
     searchTerm,
     products,
     noResultRecommendations: shouldGetRecommendations
       ? getNoResultRecommendations(storefront)
       : Promise.resolve(null),
-  });
+  };
 }
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {

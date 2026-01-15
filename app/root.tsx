@@ -1,11 +1,4 @@
-import {
-  defer,
-  type LinksFunction,
-  type LoaderFunctionArgs,
-  type AppLoadContext,
-  type MetaArgs,
-} from '@shopify/remix-oxygen';
-import {
+import type {LinksFunction,
   isRouteErrorResponse,
   Links,
   Meta,
@@ -15,7 +8,7 @@ import {
   useRouteLoaderData,
   useRouteError,
   type ShouldRevalidateFunction,
-} from '@remix-run/react';
+} from 'react-router';
 import {
   useNonce,
   Analytics,
@@ -29,12 +22,15 @@ import {PageLayout} from '~/components/PageLayout';
 import {GenericError} from '~/components/GenericError';
 import {NotFound} from '~/components/NotFound';
 import favicon from '~/assets/favicon.svg';
+import appStyles from '~/styles/app.css?url';
 import {seoPayload} from '~/lib/seo.server';
-import styles from '~/styles/app.css?url';
+import type {Route} from './+types/root';
 
 import {DEFAULT_LOCALE, parseMenu} from './lib/utils';
 
 export type RootLoader = typeof loader;
+type LoaderArgs = Route.LoaderArgs;
+type LoaderContext = LoaderArgs['context'];
 
 // This is important to avoid re-fetching root queries on sub-navigations
 export const shouldRevalidate: ShouldRevalidateFunction = ({
@@ -78,24 +74,24 @@ export const links: LinksFunction = () => {
   ];
 };
 
-export async function loader(args: LoaderFunctionArgs) {
+export async function loader(args: LoaderArgs) {
   // Start fetching non-critical data without blocking time to first byte
   const deferredData = loadDeferredData(args);
 
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  return defer({
+  return {
     ...deferredData,
     ...criticalData,
-  });
+  };
 }
 
 /**
  * Load data necessary for rendering content above the fold. This is the critical data
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
-async function loadCriticalData({request, context}: LoaderFunctionArgs) {
+async function loadCriticalData({request, context}: LoaderArgs) {
   const [layout] = await Promise.all([
     getLayoutData(context),
     // Add other queries here, so that they are loaded in parallel
@@ -116,8 +112,10 @@ async function loadCriticalData({request, context}: LoaderFunctionArgs) {
       checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
       storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
       withPrivacyBanner: true,
+      country: storefront.i18n.country,
+      language: storefront.i18n.language,
     },
-    selectedLocale: storefront.i18n,
+    selectedLocale: storefront.i18n ?? DEFAULT_LOCALE,
   };
 }
 
@@ -126,7 +124,7 @@ async function loadCriticalData({request, context}: LoaderFunctionArgs) {
  * fetched after the initial page load. If it's unavailable, the page should still 200.
  * Make sure to not throw any errors here, as it will cause the page to 500.
  */
-function loadDeferredData({context}: LoaderFunctionArgs) {
+function loadDeferredData({context}: LoaderArgs) {
   const {cart, customerAccount} = context;
 
   return {
@@ -135,8 +133,8 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
   };
 }
 
-export const meta = ({data}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(data!.seo as SeoConfig);
+export const meta: Route.MetaFunction = ({data}) => {
+  return getSeoMeta(data!.seo as SeoConfig) ?? [];
 };
 
 function Layout({children}: {children?: React.ReactNode}) {
@@ -150,7 +148,7 @@ function Layout({children}: {children?: React.ReactNode}) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="msvalidate.01" content="A352E6A0AF9A652267361BBB572B8468" />
-        <link rel="stylesheet" href={styles}></link>
+        <link rel="stylesheet" href={appStyles}></link>
         <Meta />
         <Links />
       </head>
@@ -273,7 +271,7 @@ const LAYOUT_QUERY = `#graphql
   }
 ` as const;
 
-async function getLayoutData({storefront, env}: AppLoadContext) {
+async function getLayoutData({storefront, env}: LoaderContext) {
   const data = await storefront.query(LAYOUT_QUERY, {
     variables: {
       headerMenuHandle: 'main-menu',

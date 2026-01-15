@@ -1,10 +1,6 @@
 import {useEffect} from 'react';
-import {
-  json,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData, useNavigate} from '@remix-run/react';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData, useNavigate} from 'react-router';
 import {useInView} from 'react-intersection-observer';
 import type {
   Filter,
@@ -103,7 +99,7 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
         );
       });
       if (!foundValue) {
-        // eslint-disable-next-line no-console
+         
         console.error('Could not find filter value for filter', filter);
         return null;
       }
@@ -129,12 +125,12 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
     })
     .filter((filter): filter is NonNullable<typeof filter> => filter !== null);
 
-  return json({
+  return {
     collection,
     appliedFilters,
     collections: flattenConnection(collections),
     seo,
-  });
+  };
 }
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {

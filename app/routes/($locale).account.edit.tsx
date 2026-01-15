@@ -1,10 +1,10 @@
-import {json, redirect, type ActionFunction} from '@shopify/remix-oxygen';
+import {data, redirect, type ActionFunction} from 'react-router';
 import {
   useActionData,
   Form,
   useOutletContext,
   useNavigation,
-} from '@remix-run/react';
+} from 'react-router';
 import type {
   Customer,
   CustomerUpdateInput,
@@ -64,7 +64,7 @@ export const action: ActionFunction = async ({request, context, params}) => {
     formDataHas(formData, 'lastName') &&
       (customer.lastName = formData.get('lastName') as string);
 
-    const {data, errors} = await context.customerAccount.mutate(
+    const {data: updateResult, errors} = await context.customerAccount.mutate(
       CUSTOMER_UPDATE_MUTATION,
       {
         variables: {
@@ -76,13 +76,13 @@ export const action: ActionFunction = async ({request, context, params}) => {
     invariant(!errors?.length, errors?.[0]?.message);
 
     invariant(
-      !data?.customerUpdate?.userErrors?.length,
-      data?.customerUpdate?.userErrors?.[0]?.message,
+      !updateResult?.customerUpdate?.userErrors?.length,
+      updateResult?.customerUpdate?.userErrors?.[0]?.message,
     );
 
     return redirect(params?.locale ? `${params.locale}/account` : '/account');
   } catch (error: any) {
-    return json(
+    return data(
       {formError: error?.message},
       {
         status: 400,

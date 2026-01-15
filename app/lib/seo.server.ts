@@ -1,4 +1,4 @@
-import {type SeoConfig} from '@shopify/hydrogen';
+import type {SeoConfig} from '@shopify/hydrogen';
 import type {
   Article,
   Blog,

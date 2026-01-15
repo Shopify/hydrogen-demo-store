@@ -1,6 +1,5 @@
 import clsx from 'clsx';
-import {json, redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {useLoaderData, type MetaFunction} from '@remix-run/react';
+import {redirect, type LoaderFunctionArgs,useLoaderData, type MetaFunction} from 'react-router';
 import {Money, Image, flattenConnection} from '@shopify/hydrogen';
 import type {FulfillmentStatus} from '@shopify/hydrogen/customer-account-api-types';
 
@@ -58,13 +57,13 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
         ? fulfillments[0].status
         : ('OPEN' as FulfillmentStatus);
 
-    return json({
+    return {
       order,
       lineItems,
       discountValue,
       discountPercentage,
       fulfillmentStatus,
-    });
+    };
   } catch (error) {
     throw new Response(error instanceof Error ? error.message : undefined, {
       status: 404,

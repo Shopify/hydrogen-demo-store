@@ -1,9 +1,5 @@
-import {
-  json,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData} from 'react-router';
 import {flattenConnection, getSeoMeta, Image} from '@shopify/hydrogen';
 
 import {PageHeader, Section} from '~/components/Text';
@@ -49,7 +45,7 @@ export const loader = async ({
 
   const seo = seoPayload.blog({blog, url: request.url});
 
-  return json({articles, seo});
+  return {articles, seo};
 };
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {

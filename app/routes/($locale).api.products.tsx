@@ -1,4 +1,4 @@
-import {json, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {data, type LoaderFunctionArgs} from 'react-router';
 import type {ProductSortKeys} from '@shopify/hydrogen/storefront-api-types';
 import {flattenConnection} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
@@ -59,7 +59,7 @@ export async function loader({
 
   invariant(products, 'No data returned from top products query');
 
-  return json({
+  return data({
     products: flattenConnection(products),
   });
 }

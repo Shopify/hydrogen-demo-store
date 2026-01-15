@@ -1,10 +1,10 @@
-import {useLoaderData} from '@remix-run/react';
+import {useLoaderData} from 'react-router';
 import invariant from 'tiny-invariant';
 import {
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
-  json,
-} from '@shopify/remix-oxygen';
+  data,
+} from 'react-router';
 import {CartForm, type CartQueryDataReturn, Analytics} from '@shopify/hydrogen';
 
 import {isLocalPath} from '~/lib/utils';
@@ -67,7 +67,7 @@ export async function action({request, context}: ActionFunctionArgs) {
 
   const {cart: cartResult, errors, userErrors} = result;
 
-  return json(
+  return data(
     {
       cart: cartResult,
       userErrors,
@@ -79,7 +79,7 @@ export async function action({request, context}: ActionFunctionArgs) {
 
 export async function loader({context}: LoaderFunctionArgs) {
   const {cart} = context;
-  return json(await cart.get());
+  return cart.get();
 }
 
 export default function CartRoute() {
