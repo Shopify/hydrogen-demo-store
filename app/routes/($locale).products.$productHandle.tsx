@@ -1,10 +1,7 @@
 import {useRef, Suspense} from 'react';
 import {Disclosure, Listbox} from '@headlessui/react';
-import {
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from 'react-router';
-import { useLoaderData, Await } from 'react-router';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData, Await} from 'react-router';
 import {
   getSeoMeta,
   Money,
@@ -347,7 +344,9 @@ export function ProductForm({
                         selected
                           ? 'bg-primary text-contrast border-primary'
                           : 'bg-contrast text-primary border-primary/20',
-                        available ? 'opacity-100' : 'opacity-40 cursor-not-allowed',
+                        available
+                          ? 'opacity-100'
+                          : 'opacity-40 cursor-not-allowed',
                       )}
                     >
                       <ProductOptionSwatch swatch={swatch} name={name} />

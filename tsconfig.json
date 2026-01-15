@@ -10,7 +10,13 @@
     ".graphqlrc.ts",
     ".react-router/types/**/*"
   ],
-  "exclude": ["node_modules", "dist", "playwright.config.ts", "build", "packages/**/dist/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "playwright.config.ts",
+    "build",
+    "packages/**/dist/**/*"
+  ],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "isolatedModules": true,
@@ -41,4 +47,3 @@
     "verbatimModuleSyntax": true
   }
 }
-

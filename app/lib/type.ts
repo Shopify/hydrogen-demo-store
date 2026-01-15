@@ -20,4 +20,3 @@ export type I18nLocale = Locale & {
 };
 
 export type Storefront = HydrogenStorefront<I18nLocale>;
-

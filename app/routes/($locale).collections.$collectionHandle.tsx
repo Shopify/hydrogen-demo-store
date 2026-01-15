@@ -1,9 +1,6 @@
 import {useEffect} from 'react';
-import {
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from 'react-router';
-import { useLoaderData, useNavigate } from 'react-router';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData, useNavigate} from 'react-router';
 import {useInView} from 'react-intersection-observer';
 import type {
   Filter,
@@ -98,11 +95,11 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
         return (
           // This comparison should be okay as long as we're not manipulating the input we
           // get from the API before using it as a URL param.
-          (JSON.stringify(valueInput) === JSON.stringify(filter))
+          JSON.stringify(valueInput) === JSON.stringify(filter)
         );
       });
       if (!foundValue) {
-        // eslint-disable-next-line no-console
+         
         console.error('Could not find filter value for filter', filter);
         return null;
       }

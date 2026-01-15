@@ -1,4 +1,4 @@
-import { useParams, Form, Await, useRouteLoaderData } from 'react-router';
+import {useParams, Form, Await, useRouteLoaderData} from 'react-router';
 import useWindowScroll from 'react-use/esm/useWindowScroll';
 import {Disclosure} from '@headlessui/react';
 import {Suspense, useEffect, useMemo} from 'react';

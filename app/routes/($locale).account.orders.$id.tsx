@@ -1,6 +1,5 @@
 import clsx from 'clsx';
-import {redirect, type LoaderFunctionArgs} from 'react-router';
-import { useLoaderData, type MetaFunction } from 'react-router';
+import {redirect, type LoaderFunctionArgs,useLoaderData, type MetaFunction} from 'react-router';
 import {Money, Image, flattenConnection} from '@shopify/hydrogen';
 import type {FulfillmentStatus} from '@shopify/hydrogen/customer-account-api-types';
 

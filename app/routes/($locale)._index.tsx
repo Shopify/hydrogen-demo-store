@@ -1,9 +1,6 @@
-import {
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from 'react-router';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
 import {Suspense} from 'react';
-import { Await, useLoaderData } from 'react-router';
+import {Await, useLoaderData} from 'react-router';
 import {getSeoMeta} from '@shopify/hydrogen';
 
 import {Hero} from '~/components/Hero';
@@ -79,7 +76,7 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
     })
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
-      // eslint-disable-next-line no-console
+       
       console.error(error);
       return null;
     });
@@ -94,7 +91,7 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
     })
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
-      // eslint-disable-next-line no-console
+       
       console.error(error);
       return null;
     });
@@ -108,7 +105,7 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
     })
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
-      // eslint-disable-next-line no-console
+       
       console.error(error);
       return null;
     });
@@ -123,7 +120,7 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
     })
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
-      // eslint-disable-next-line no-console
+       
       console.error(error);
       return null;
     });

@@ -1,5 +1,10 @@
 import {data, redirect, type ActionFunction} from 'react-router';
-import { useActionData, Form, useOutletContext, useNavigation } from 'react-router';
+import {
+  useActionData,
+  Form,
+  useOutletContext,
+  useNavigation,
+} from 'react-router';
 import type {
   Customer,
   CustomerUpdateInput,

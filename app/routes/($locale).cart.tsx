@@ -1,4 +1,4 @@
-import { useLoaderData } from 'react-router';
+import {useLoaderData} from 'react-router';
 import invariant from 'tiny-invariant';
 import {
   type LoaderFunctionArgs,

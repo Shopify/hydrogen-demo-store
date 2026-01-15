@@ -47,4 +47,3 @@ export async function createHydrogenRouterContext(
 
   return hydrogenContext;
 }
-

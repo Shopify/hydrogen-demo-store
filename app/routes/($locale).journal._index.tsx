@@ -1,8 +1,5 @@
-import {
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from 'react-router';
-import { useLoaderData } from 'react-router';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData} from 'react-router';
 import {flattenConnection, getSeoMeta, Image} from '@shopify/hydrogen';
 
 import {PageHeader, Section} from '~/components/Text';

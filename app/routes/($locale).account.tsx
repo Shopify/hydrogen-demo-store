@@ -1,4 +1,11 @@
-import { Await, Form, Outlet, useLoaderData, useMatches, useOutlet } from 'react-router';
+import {
+  Await,
+  Form,
+  Outlet,
+  useLoaderData,
+  useMatches,
+  useOutlet,
+} from 'react-router';
 import {Suspense} from 'react';
 import {data, type LoaderFunctionArgs} from 'react-router';
 import {flattenConnection} from '@shopify/hydrogen';

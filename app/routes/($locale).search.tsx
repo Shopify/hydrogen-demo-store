@@ -1,8 +1,5 @@
-import {
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from 'react-router';
-import { Await, Form, useLoaderData } from 'react-router';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {Await, Form, useLoaderData} from 'react-router';
 import {Suspense} from 'react';
 import {
   Pagination,

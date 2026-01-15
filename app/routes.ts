@@ -6,4 +6,3 @@ export default hydrogenRoutes([
   ...(await flatRoutes()),
   // Add manual routes here if needed.
 ]) satisfies RouteConfig;
-

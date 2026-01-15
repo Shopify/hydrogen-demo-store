@@ -1,8 +1,8 @@
 import type {SyntheticEvent} from 'react';
 import {useMemo, useState} from 'react';
 import {Menu, Disclosure} from '@headlessui/react';
-import type { Location } from 'react-router';
-import { Link, useLocation, useSearchParams, useNavigate } from 'react-router';
+import type {Location} from 'react-router';
+import {Link, useLocation, useSearchParams, useNavigate} from 'react-router';
 import useDebounce from 'react-use/esm/useDebounce';
 import type {
   Filter,

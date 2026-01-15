@@ -159,7 +159,7 @@ function parseItem(primaryDomain: string, env: MenuEnv, customPrefixes = {}) {
     | EnhancedMenu['items'][number]['items'][0]
     | null {
     if (!item?.url || !item?.type) {
-      // eslint-disable-next-line no-console
+       
       console.warn('Invalid menu item.  Must include a url and type.');
       return null;
     }
@@ -211,7 +211,7 @@ export function parseMenu(
   customPrefixes = {},
 ): EnhancedMenu | null {
   if (!menu?.items) {
-    // eslint-disable-next-line no-console
+     
     console.warn('Invalid menu passed to parseMenu');
     return null;
   }

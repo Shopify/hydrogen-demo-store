@@ -1,5 +1,4 @@
-import type {LinksFunction} from 'react-router';
-import {
+import type {LinksFunction,
   isRouteErrorResponse,
   Links,
   Meta,

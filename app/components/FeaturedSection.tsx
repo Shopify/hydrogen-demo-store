@@ -1,5 +1,5 @@
 import {useEffect} from 'react';
-import { useFetcher } from 'react-router';
+import {useFetcher} from 'react-router';
 
 import {usePrefixPathWithLocale} from '~/lib/utils';
 import type {FeaturedData} from '~/routes/($locale).featured-products';

@@ -4,7 +4,7 @@ import {
   type LinksFunction,
   type LoaderFunctionArgs,
 } from 'react-router';
-import { useLoaderData } from 'react-router';
+import {useLoaderData} from 'react-router';
 import {getSeoMeta, Image} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
