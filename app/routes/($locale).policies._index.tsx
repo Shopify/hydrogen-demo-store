@@ -1,30 +1,26 @@
-import {
-  json,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData} from 'react-router';
 import invariant from 'tiny-invariant';
-import {getSeoMeta} from '@shopify/hydrogen';
+import {gql} from '@shopify/hydrogen';
 
 import {PageHeader, Section, Heading} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {routeHeaders} from '~/data/cache';
 import {seoPayload} from '~/lib/seo.server';
+import {generateSeoMeta} from '~/lib/seo';
+import {storefrontContext} from '~/storefront.context';
 import type {NonNullableFields} from '~/lib/type';
 
 export const headers = routeHeaders;
 
-export async function loader({
-  request,
-  context: {storefront},
-}: LoaderFunctionArgs) {
-  const data = await storefront.query(POLICIES_QUERY);
+export async function loader({request, context}: LoaderFunctionArgs) {
+  const client = context.get(storefrontContext);
+  const {data} = await client.graphql(POLICIES_QUERY);
 
-  invariant(data, 'No data returned from Shopify API');
+  invariant(data?.shop, 'No data returned from Shopify API');
   const policies = Object.values(
     data.shop as NonNullableFields<typeof data.shop>,
-  ).filter(Boolean);
+  ).filter(Boolean) as Array<{id: string; title: string; handle: string}>;
 
   if (policies.length === 0) {
     throw new Response('Not found', {status: 404});
@@ -32,14 +28,14 @@ export async function loader({
 
   const seo = seoPayload.policies({policies, url: request.url});
 
-  return json({
+  return {
     policies,
     seo,
-  });
+  };
 }
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+  return generateSeoMeta(...matches.map((match) => (match.data as any)?.seo));
 };
 
 export default function Policies() {
@@ -63,7 +59,7 @@ export default function Policies() {
   );
 }
 
-const POLICIES_QUERY = `#graphql
+const POLICIES_QUERY = gql(`
   fragment PolicyIndex on ShopPolicy {
     id
     title
@@ -91,4 +87,4 @@ const POLICIES_QUERY = `#graphql
       }
     }
   }
-`;
+`);

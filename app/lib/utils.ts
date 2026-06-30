@@ -1,6 +1,6 @@
-import {useLocation, useRouteLoaderData} from '@remix-run/react';
+import {useLocation, useRouteLoaderData} from 'react-router';
 import type {MoneyV2} from '@shopify/hydrogen/storefront-api-types';
-import type {FulfillmentStatus} from '@shopify/hydrogen/customer-account-api-types';
+import type {FulfillmentStatus} from '~/graphql/customer-account/types';
 import typographicBase from 'typographic-base';
 
 import type {

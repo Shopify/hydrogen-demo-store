@@ -1,35 +1,38 @@
-import {
-  json,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
-import {flattenConnection, getSeoMeta, Image} from '@shopify/hydrogen';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData} from 'react-router';
+import {gql} from '@shopify/hydrogen';
 
+import {flattenConnection} from '~/lib/flatten-connection';
+import {Image} from '~/components/Image';
 import {PageHeader, Section} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {Grid} from '~/components/Grid';
 import {getImageLoadingPriority, PAGINATION_SIZE} from '~/lib/const';
 import {seoPayload} from '~/lib/seo.server';
+import {generateSeoMeta} from '~/lib/seo';
 import {routeHeaders} from '~/data/cache';
-import type {ArticleFragment} from 'storefrontapi.generated';
+import {getLocaleFromRequest} from '~/lib/utils';
+import {storefrontContext} from '~/storefront.context';
+import type {ResultOf} from '~/lib/graphql-types';
 
 const BLOG_HANDLE = 'Journal';
 
+type ArticleFragment = NonNullable<
+  NonNullable<ResultOf<typeof BLOGS_QUERY>['blog']>['articles']
+>['edges'][number]['node'];
+
 export const headers = routeHeaders;
 
-export const loader = async ({
-  request,
-  context: {storefront},
-}: LoaderFunctionArgs) => {
-  const {language, country} = storefront.i18n;
-  const {blog} = await storefront.query(BLOGS_QUERY, {
+export const loader = async ({request, context}: LoaderFunctionArgs) => {
+  const client = context.get(storefrontContext);
+  const {language, country} = getLocaleFromRequest(request);
+  const {data} = await client.graphql(BLOGS_QUERY, {
     variables: {
       blogHandle: BLOG_HANDLE,
       pageBy: PAGINATION_SIZE,
-      language,
     },
   });
+  const blog = data?.blog;
 
   if (!blog?.articles) {
     throw new Response('Not found', {status: 404});
@@ -49,11 +52,11 @@ export const loader = async ({
 
   const seo = seoPayload.blog({blog, url: request.url});
 
-  return json({articles, seo});
+  return {articles, seo};
 };
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+  return generateSeoMeta(...matches.map((match) => (match.data as any)?.seo));
 };
 
 export default function Journals() {
@@ -109,44 +112,44 @@ function ArticleCard({
   );
 }
 
-const BLOGS_QUERY = `#graphql
-query Blog(
-  $language: LanguageCode
-  $blogHandle: String!
-  $pageBy: Int!
-  $cursor: String
-) @inContext(language: $language) {
-  blog(handle: $blogHandle) {
-    title
-    seo {
+const BLOGS_QUERY = gql(`
+  query Blog(
+    $language: LanguageCode
+    $blogHandle: String!
+    $pageBy: Int!
+    $cursor: String
+  ) @inContext(language: $language) {
+    blog(handle: $blogHandle) {
       title
-      description
-    }
-    articles(first: $pageBy, after: $cursor) {
-      edges {
-        node {
-          ...Article
+      seo {
+        title
+        description
+      }
+      articles(first: $pageBy, after: $cursor) {
+        edges {
+          node {
+            ...Article
+          }
         }
       }
     }
   }
-}
 
-fragment Article on Article {
-  author: authorV2 {
-    name
-  }
-  contentHtml
-  handle
-  id
-  image {
+  fragment Article on Article {
+    author: authorV2 {
+      name
+    }
+    contentHtml
+    handle
     id
-    altText
-    url
-    width
-    height
+    image {
+      id
+      altText
+      url
+      width
+      height
+    }
+    publishedAt
+    title
   }
-  publishedAt
-  title
-}
-`;
+`);

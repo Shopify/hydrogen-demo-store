@@ -1,4 +1,4 @@
-import {Image} from '@shopify/hydrogen';
+import {Image} from '~/components/Image';
 
 import type {MediaFragment} from 'storefrontapi.generated';
 

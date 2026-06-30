@@ -1,18 +1,18 @@
 import {
-  json,
+  data,
   redirect,
   type ActionFunction,
   type AppLoadContext,
-} from '@shopify/remix-oxygen';
+} from 'react-router';
 import {
   Form,
   useActionData,
   useOutletContext,
   useParams,
   useNavigation,
-} from '@remix-run/react';
-import {flattenConnection} from '@shopify/hydrogen';
-import type {CustomerAddressInput} from '@shopify/hydrogen/customer-account-api-types';
+} from 'react-router';
+import {flattenConnection} from '~/lib/flatten-connection';
+import type {CustomerAddressInput} from '~/graphql/customer-account/types';
 import invariant from 'tiny-invariant';
 
 import {Button} from '~/components/Button';
@@ -23,6 +23,8 @@ import {
   DELETE_ADDRESS_MUTATION,
   CREATE_ADDRESS_MUTATION,
 } from '~/graphql/customer-account/CustomerAddressMutations';
+
+import {customerAccountContext} from '~/storefront.context';
 
 import {doLogout} from './($locale).account_.logout';
 import type {AccountOutletContext} from './($locale).account.edit';
@@ -36,7 +38,7 @@ export const handle = {
 };
 
 export const action: ActionFunction = async ({request, context, params}) => {
-  const {customerAccount} = context;
+  const customerAccount = context.get(customerAccountContext);
   const formData = await request.formData();
 
   // Double-check current user is logged in.
@@ -58,15 +60,15 @@ export const action: ActionFunction = async ({request, context, params}) => {
       invariant(!errors?.length, errors?.[0]?.message);
 
       invariant(
-        !data?.customerAddressUpdate?.userErrors?.length,
-        data?.customerAddressUpdate?.userErrors?.[0]?.message,
+        !data?.customerAddressDelete?.userErrors?.length,
+        data?.customerAddressDelete?.userErrors?.[0]?.message,
       );
 
       return redirect(
         params?.locale ? `${params?.locale}/account` : '/account',
       );
     } catch (error: any) {
-      return json(
+      return data(
         {formError: error.message},
         {
           status: 400,
@@ -124,7 +126,7 @@ export const action: ActionFunction = async ({request, context, params}) => {
         params?.locale ? `${params?.locale}/account` : '/account',
       );
     } catch (error: any) {
-      return json(
+      return data(
         {formError: error.message},
         {
           status: 400,
@@ -155,7 +157,7 @@ export const action: ActionFunction = async ({request, context, params}) => {
         params?.locale ? `${params?.locale}/account` : '/account',
       );
     } catch (error: any) {
-      return json(
+      return data(
         {formError: error.message},
         {
           status: 400,

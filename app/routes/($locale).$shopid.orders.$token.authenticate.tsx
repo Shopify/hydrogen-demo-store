@@ -1,8 +1,10 @@
-import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {redirect, type LoaderFunctionArgs} from 'react-router';
+import {gql} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
 import {Button} from '~/components/Button';
 import {PageHeader} from '~/components/Text';
+import {storefrontContext} from '~/storefront.context';
 
 /*
  If your online store had active orders before you launched your Hydrogen storefront,
@@ -11,20 +13,18 @@ import {PageHeader} from '~/components/Text';
  that are routing to your Hydrogen storefront. To prevent this, ensure that you redirect
  those requests back to Shopify.
 */
-export async function loader({
-  request,
-  context: {storefront},
-}: LoaderFunctionArgs) {
+export async function loader({request, context}: LoaderFunctionArgs) {
+  const client = context.get(storefrontContext);
   const {origin} = new URL(request.url);
-  const {shop} = await storefront.query(
-    `#graphql
-      query getShopPrimaryDomain { shop { primaryDomain { url } } }
-    `,
-    {cache: storefront.CacheLong()},
-  );
+  const {data} = await client.graphql(SHOP_PRIMARY_DOMAIN_QUERY);
+  const shop = data?.shop;
   invariant(shop, 'Error redirecting to the order status URL');
   return redirect(request.url.replace(origin, shop.primaryDomain.url));
 }
+
+const SHOP_PRIMARY_DOMAIN_QUERY = gql(`#graphql
+  query getShopPrimaryDomain { shop { primaryDomain { url } } }
+`);
 
 export default function () {
   return null;

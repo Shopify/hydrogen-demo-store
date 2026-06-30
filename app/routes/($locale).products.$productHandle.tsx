@@ -1,46 +1,49 @@
 import {useRef, Suspense} from 'react';
 import {Disclosure, Listbox} from '@headlessui/react';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData, Await} from 'react-router';
 import {
-  defer,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData, Await} from '@remix-run/react';
-import {
-  getSeoMeta,
-  Money,
-  ShopPayButton,
+  gql,
   getSelectedProductOptions,
-  Analytics,
-  useOptimisticVariant,
-  getAdjacentAndFirstAvailableVariants,
-  useSelectedOptionInUrlParam,
-  getProductOptions,
-  type MappedProductOptions,
+  canAddToCart,
 } from '@shopify/hydrogen';
+import {
+  createProductComponents,
+  ShopPayButton,
+} from '@shopify/hydrogen/react';
 import invariant from 'tiny-invariant';
 import clsx from 'clsx';
-import type {
-  Maybe,
-  ProductOptionValueSwatch,
-} from '@shopify/hydrogen/storefront-api-types';
 
-import type {ProductFragment} from 'storefrontapi.generated';
 import {Heading, Section, Text} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {Button} from '~/components/Button';
-import {AddToCartButton} from '~/components/AddToCartButton';
+import {Money} from '~/components/Money';
 import {Skeleton} from '~/components/Skeleton';
 import {ProductSwimlane} from '~/components/ProductSwimlane';
 import {ProductGallery} from '~/components/ProductGallery';
 import {IconCaret, IconCheck, IconClose} from '~/components/Icon';
 import {getExcerpt} from '~/lib/utils';
 import {seoPayload} from '~/lib/seo.server';
+import {generateSeoMeta} from '~/lib/seo';
 import type {Storefront} from '~/lib/type';
 import {routeHeaders} from '~/data/cache';
 import {MEDIA_FRAGMENT, PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
+import {storefrontContext} from '~/storefront.context';
 
 export const headers = routeHeaders;
+
+type ProductType = NonNullable<Awaited<ReturnType<typeof loader>>['product']>;
+
+const {ProductProvider, useProductForm} =
+  createProductComponents<ProductType>();
+
+type Swatch =
+  | {
+      color?: string | null;
+      image?: {previewImage?: {url: string} | null} | null;
+    }
+  | null
+  | undefined;
 
 export async function loader(args: LoaderFunctionArgs) {
   const {productHandle} = args.params;
@@ -52,7 +55,7 @@ export async function loader(args: LoaderFunctionArgs) {
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  return defer({...deferredData, ...criticalData});
+  return {...deferredData, ...criticalData};
 }
 
 /**
@@ -64,30 +67,35 @@ async function loadCriticalData({
   request,
   context,
 }: LoaderFunctionArgs) {
+  const client = context.get(storefrontContext);
   const {productHandle} = params;
   invariant(productHandle, 'Missing productHandle param, check route filename');
 
   const selectedOptions = getSelectedProductOptions(request);
 
-  const [{shop, product}] = await Promise.all([
-    context.storefront.query(PRODUCT_QUERY, {
+  const [{data}] = await Promise.all([
+    client.graphql(PRODUCT_QUERY, {
       variables: {
         handle: productHandle,
         selectedOptions,
-        country: context.storefront.i18n.country,
-        language: context.storefront.i18n.language,
       },
     }),
     // Add other queries here, so that they are loaded in parallel
   ]);
 
+  const shop = data?.shop;
+  const product = data?.product;
+
   if (!product?.id) {
     throw new Response('product', {status: 404});
   }
 
-  const recommended = getRecommendedProducts(context.storefront, product.id);
+  const recommended = getRecommendedProducts(client, product.id);
   const selectedVariant = product.selectedOrFirstAvailableVariant ?? {};
-  const variants = getAdjacentAndFirstAvailableVariants(product);
+  const variants = [
+    product.selectedOrFirstAvailableVariant,
+    ...product.adjacentVariants,
+  ].filter((v): v is NonNullable<typeof v> => Boolean(v));
 
   const seo = seoPayload.product({
     product: {...product, variants},
@@ -97,9 +105,8 @@ async function loadCriticalData({
 
   return {
     product,
-    variants,
     shop,
-    storeDomain: shop.primaryDomain.url,
+    storeDomain: shop?.primaryDomain.url,
     recommended,
     seo,
   };
@@ -118,33 +125,26 @@ function loadDeferredData(args: LoaderFunctionArgs) {
 }
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+  return generateSeoMeta(...matches.map((match) => (match.data as any)?.seo));
 };
 
+function optionsSearch(
+  selectedOptions: Array<{name: string; value: string}>,
+): string {
+  const params = new URLSearchParams();
+  for (const {name, value} of selectedOptions) {
+    params.set(name, value);
+  }
+  return params.toString();
+}
+
 export default function Product() {
-  const {product, shop, recommended, variants, storeDomain} =
-    useLoaderData<typeof loader>();
+  const {product, shop, recommended} = useLoaderData<typeof loader>();
   const {media, title, vendor, descriptionHtml} = product;
-  const {shippingPolicy, refundPolicy} = shop;
-
-  // Optimistically selects a variant with given available variant information
-  const selectedVariant = useOptimisticVariant(
-    product.selectedOrFirstAvailableVariant,
-    variants,
-  );
-
-  // Sets the search param to the selected variant without navigation
-  // only when no search params are set in the url
-  useSelectedOptionInUrlParam(selectedVariant.selectedOptions);
-
-  // Get the product options array
-  const productOptions = getProductOptions({
-    ...product,
-    selectedOrFirstAvailableVariant: selectedVariant,
-  });
+  const {shippingPolicy, refundPolicy} = shop ?? {};
 
   return (
-    <>
+    <ProductProvider product={product}>
       <Section className="px-0 md:px-8 lg:px-12">
         <div className="grid items-start md:gap-6 lg:gap-20 md:grid-cols-2 lg:grid-cols-3">
           <ProductGallery
@@ -161,11 +161,7 @@ export default function Product() {
                   <Text className={'opacity-50 font-medium'}>{vendor}</Text>
                 )}
               </div>
-              <ProductForm
-                productOptions={productOptions}
-                selectedVariant={selectedVariant}
-                storeDomain={storeDomain}
-              />
+              <ProductForm product={product} />
               <div className="grid gap-4 py-4">
                 {descriptionHtml && (
                   <ProductDetail
@@ -202,47 +198,33 @@ export default function Product() {
           )}
         </Await>
       </Suspense>
-      <Analytics.ProductView
-        data={{
-          products: [
-            {
-              id: product.id,
-              title: product.title,
-              price: selectedVariant?.price.amount || '0',
-              vendor: product.vendor,
-              variantId: selectedVariant?.id || '',
-              variantTitle: selectedVariant?.title || '',
-              quantity: 1,
-            },
-          ],
-        }}
-      />
-    </>
+    </ProductProvider>
   );
 }
 
-export function ProductForm({
-  productOptions,
-  selectedVariant,
-  storeDomain,
-}: {
-  productOptions: MappedProductOptions[];
-  selectedVariant: ProductFragment['selectedOrFirstAvailableVariant'];
-  storeDomain: string;
-}) {
+export function ProductForm({product}: {product: ProductType}) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const {options, selectedVariant, register, formProps} = useProductForm();
 
-  const isOutOfStock = !selectedVariant?.availableForSale;
+  const swatches = new Map<string, Swatch>();
+  for (const option of product.options) {
+    for (const value of option.optionValues) {
+      swatches.set(`${option.name}:${value.name}`, value.swatch);
+    }
+  }
 
+  const addToCartReady = canAddToCart(product, options);
+  const isOutOfStock = Boolean(selectedVariant && !selectedVariant.availableForSale);
   const isOnSale =
     selectedVariant?.price?.amount &&
     selectedVariant?.compareAtPrice?.amount &&
-    selectedVariant?.price?.amount < selectedVariant?.compareAtPrice?.amount;
+    Number(selectedVariant.price.amount) <
+      Number(selectedVariant.compareAtPrice.amount);
 
   return (
     <div className="grid gap-10">
       <div className="grid gap-4">
-        {productOptions.map((option, optionIndex) => (
+        {options.map((option) => (
           <div
             key={option.name}
             className="product-options flex flex-col flex-wrap mb-4 gap-y-2 last:mb-0"
@@ -251,7 +233,7 @@ export function ProductForm({
               {option.name}
             </Heading>
             <div className="flex flex-wrap items-baseline gap-4">
-              {option.optionValues.length > 7 ? (
+              {option.values.length > 7 ? (
                 <div className="relative w-full">
                   <Listbox>
                     {({open}) => (
@@ -266,10 +248,8 @@ export function ProductForm({
                           )}
                         >
                           <span>
-                            {
-                              selectedVariant?.selectedOptions[optionIndex]
-                                .value
-                            }
+                            {option.values.find((value) => value.selected)
+                              ?.name}
                           </span>
                           <IconCaret direction={open ? 'up' : 'down'} />
                         </Listbox.Button>
@@ -279,130 +259,118 @@ export function ProductForm({
                             open ? 'max-h-48' : 'max-h-0',
                           )}
                         >
-                          {option.optionValues
+                          {option.values
                             .filter((value) => value.available)
-                            .map(
-                              ({
-                                isDifferentProduct,
-                                name,
-                                variantUriQuery,
-                                handle,
-                                selected,
-                              }) => (
+                            .map((value) => {
+                              const isDifferentProduct =
+                                value.handle !== product.handle;
+                              return (
                                 <Listbox.Option
-                                  key={`option-${option.name}-${name}`}
-                                  value={name}
+                                  key={`option-${option.name}-${value.name}`}
+                                  value={value.name}
                                 >
                                   <Link
                                     {...(!isDifferentProduct
                                       ? {rel: 'nofollow'}
                                       : {})}
-                                    to={`/products/${handle}?${variantUriQuery}`}
+                                    to={`/products/${value.handle}?${optionsSearch(value.selectedOptions)}`}
                                     preventScrollReset
                                     className={clsx(
                                       'text-primary w-full p-2 transition rounded flex justify-start items-center text-left cursor-pointer',
-                                      selected && 'bg-primary/10',
+                                      value.selected && 'bg-primary/10',
                                     )}
                                     onClick={() => {
                                       if (!closeRef?.current) return;
                                       closeRef.current.click();
                                     }}
                                   >
-                                    {name}
-                                    {selected && (
+                                    {value.name}
+                                    {value.selected && (
                                       <span className="ml-2">
                                         <IconCheck />
                                       </span>
                                     )}
                                   </Link>
                                 </Listbox.Option>
-                              ),
-                            )}
+                              );
+                            })}
                         </Listbox.Options>
                       </>
                     )}
                   </Listbox>
                 </div>
               ) : (
-                option.optionValues.map(
-                  ({
-                    isDifferentProduct,
-                    name,
-                    variantUriQuery,
-                    handle,
-                    selected,
-                    available,
-                    swatch,
-                  }) => (
+                option.values.map((value) => {
+                  const isDifferentProduct = value.handle !== product.handle;
+                  return (
                     <Link
-                      key={option.name + name}
+                      key={option.name + value.name}
                       {...(!isDifferentProduct ? {rel: 'nofollow'} : {})}
-                      to={`/products/${handle}?${variantUriQuery}`}
+                      to={`/products/${value.handle}?${optionsSearch(value.selectedOptions)}`}
                       preventScrollReset
                       prefetch="intent"
                       replace
                       className={clsx(
                         'leading-none py-1 border-b-[1.5px] cursor-pointer transition-all duration-200',
-                        selected ? 'border-primary/50' : 'border-primary/0',
-                        available ? 'opacity-100' : 'opacity-50',
+                        value.selected
+                          ? 'border-primary/50'
+                          : 'border-primary/0',
+                        value.available ? 'opacity-100' : 'opacity-50',
                       )}
                     >
-                      <ProductOptionSwatch swatch={swatch} name={name} />
+                      <ProductOptionSwatch
+                        swatch={swatches.get(`${option.name}:${value.name}`)}
+                        name={value.name}
+                      />
                     </Link>
-                  ),
-                )
+                  );
+                })
               )}
             </div>
           </div>
         ))}
-        {selectedVariant && (
-          <div className="grid items-stretch gap-4">
-            {isOutOfStock ? (
-              <Button variant="secondary" disabled>
-                <Text>Sold out</Text>
-              </Button>
+        <form {...formProps()} className="grid items-stretch gap-4">
+          <input type="hidden" {...register('merchandiseId', {})} />
+          <input type="hidden" {...register('quantity', {value: 1})} />
+          <Button
+            as="button"
+            type="submit"
+            variant={isOutOfStock ? 'secondary' : 'primary'}
+            width="full"
+            disabled={!addToCartReady}
+            data-test="add-to-cart"
+          >
+            {!selectedVariant ? (
+              <Text>Select options</Text>
+            ) : isOutOfStock ? (
+              <Text>Sold out</Text>
             ) : (
-              <AddToCartButton
-                lines={[
-                  {
-                    merchandiseId: selectedVariant.id!,
-                    quantity: 1,
-                  },
-                ]}
-                variant="primary"
-                data-test="add-to-cart"
+              <Text
+                as="span"
+                className="flex items-center justify-center gap-2"
               >
-                <Text
+                <span>Add to Cart</span> <span>·</span>{' '}
+                <Money
+                  withoutTrailingZeros
+                  data={selectedVariant.price}
                   as="span"
-                  className="flex items-center justify-center gap-2"
-                >
-                  <span>Add to Cart</span> <span>·</span>{' '}
+                  data-test="price"
+                />
+                {isOnSale && selectedVariant.compareAtPrice && (
                   <Money
                     withoutTrailingZeros
-                    data={selectedVariant?.price!}
+                    data={selectedVariant.compareAtPrice}
                     as="span"
-                    data-test="price"
+                    className="opacity-50 strike"
                   />
-                  {isOnSale && (
-                    <Money
-                      withoutTrailingZeros
-                      data={selectedVariant?.compareAtPrice!}
-                      as="span"
-                      className="opacity-50 strike"
-                    />
-                  )}
-                </Text>
-              </AddToCartButton>
+                )}
+              </Text>
             )}
-            {!isOutOfStock && (
-              <ShopPayButton
-                width="100%"
-                variantIds={[selectedVariant?.id!]}
-                storeDomain={storeDomain}
-              />
-            )}
-          </div>
-        )}
+          </Button>
+          {selectedVariant && !isOutOfStock && (
+            <ShopPayButton width="100%" variants={[selectedVariant.id]} />
+          )}
+        </form>
       </div>
     </div>
   );
@@ -412,7 +380,7 @@ function ProductOptionSwatch({
   swatch,
   name,
 }: {
-  swatch?: Maybe<ProductOptionValueSwatch> | undefined;
+  swatch?: Swatch;
   name: string;
 }) {
   const image = swatch?.image?.previewImage?.url;
@@ -482,7 +450,7 @@ function ProductDetail({
   );
 }
 
-const PRODUCT_VARIANT_FRAGMENT = `#graphql
+const PRODUCT_VARIANT_FRAGMENT = gql(`#graphql
   fragment ProductVariant on ProductVariant {
     id
     availableForSale
@@ -516,9 +484,10 @@ const PRODUCT_VARIANT_FRAGMENT = `#graphql
       handle
     }
   }
-`;
+`);
 
-const PRODUCT_FRAGMENT = `#graphql
+const PRODUCT_FRAGMENT = gql(
+  `#graphql
   fragment Product on Product {
     id
     title
@@ -561,10 +530,12 @@ const PRODUCT_FRAGMENT = `#graphql
       }
     }
   }
-  ${PRODUCT_VARIANT_FRAGMENT}
-` as const;
+`,
+  [PRODUCT_VARIANT_FRAGMENT, MEDIA_FRAGMENT],
+);
 
-const PRODUCT_QUERY = `#graphql
+const PRODUCT_QUERY = gql(
+  `#graphql
   query Product(
     $country: CountryCode
     $language: LanguageCode
@@ -589,11 +560,12 @@ const PRODUCT_QUERY = `#graphql
       }
     }
   }
-  ${MEDIA_FRAGMENT}
-  ${PRODUCT_FRAGMENT}
-` as const;
+`,
+  [PRODUCT_FRAGMENT],
+);
 
-const RECOMMENDED_PRODUCTS_QUERY = `#graphql
+const RECOMMENDED_PRODUCTS_QUERY = gql(
+  `#graphql
   query productRecommendations(
     $productId: ID!
     $count: Int
@@ -609,14 +581,15 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
       }
     }
   }
-  ${PRODUCT_CARD_FRAGMENT}
-` as const;
+`,
+  [PRODUCT_CARD_FRAGMENT],
+);
 
 async function getRecommendedProducts(
-  storefront: Storefront,
+  client: Storefront,
   productId: string,
 ) {
-  const products = await storefront.query(RECOMMENDED_PRODUCTS_QUERY, {
+  const {data: products} = await client.graphql(RECOMMENDED_PRODUCTS_QUERY, {
     variables: {productId, count: 12},
   });
 

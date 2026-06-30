@@ -1,15 +1,13 @@
 import clsx from 'clsx';
 import {useEffect, useId, useMemo} from 'react';
-import {useFetcher} from '@remix-run/react';
-import type {
-  Product,
-  ProductSortKeys,
-} from '@shopify/hydrogen/storefront-api-types';
+import {useFetcher} from 'react-router';
+import type {ProductSortKeys} from '@shopify/hydrogen/storefront-api-types';
 
 import {Heading, Text} from '~/components/Text';
 import {ProductCard} from '~/components/ProductCard';
 import {Skeleton} from '~/components/Skeleton';
 import {usePrefixPathWithLocale} from '~/lib/utils';
+import type {ProductCardFragment} from '~/data/fragments';
 
 interface FeaturedProductsProps {
   count: number;
@@ -40,7 +38,7 @@ export function FeaturedProducts({
   reverse,
   sortKey = 'BEST_SELLING',
 }: FeaturedProductsProps) {
-  const {load, data} = useFetcher<{products: Product[]}>();
+  const {load, data} = useFetcher<{products: ProductCardFragment[]}>();
   const queryString = useMemo(
     () =>
       Object.entries({count, sortKey, query, reverse})
@@ -87,7 +85,7 @@ function FeatureProductsContent({
   products,
 }: {
   count: FeaturedProductsProps['count'];
-  products: Product[] | undefined;
+  products: ProductCardFragment[] | undefined;
   onClick?: () => void;
 }) {
   const id = useId();

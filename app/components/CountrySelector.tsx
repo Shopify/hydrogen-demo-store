@@ -1,9 +1,12 @@
-import {useFetcher, useLocation, useRouteLoaderData} from '@remix-run/react';
+import {
+  Form,
+  useFetcher,
+  useLocation,
+  useRouteLoaderData,
+} from 'react-router';
 import {useCallback, useEffect, useRef} from 'react';
 import {useInView} from 'react-intersection-observer';
 import clsx from 'clsx';
-import type {CartBuyerIdentityInput} from '@shopify/hydrogen/storefront-api-types';
-import {CartForm} from '@shopify/hydrogen';
 
 import {Button} from '~/components/Button';
 import {Heading} from '~/components/Text';
@@ -109,13 +112,7 @@ function Country({
   isSelected: boolean;
 }) {
   return (
-    <ChangeLocaleForm
-      key={countryLocale.country}
-      redirectTo={countryUrlPath}
-      buyerIdentity={{
-        countryCode: countryLocale.country,
-      }}
-    >
+    <ChangeLocaleForm key={countryLocale.country} redirectTo={countryUrlPath}>
       <Button
         className={clsx([
           'text-contrast dark:text-primary',
@@ -139,26 +136,15 @@ function Country({
 
 function ChangeLocaleForm({
   children,
-  buyerIdentity,
   redirectTo,
 }: {
   children: React.ReactNode;
-  buyerIdentity: CartBuyerIdentityInput;
   redirectTo: string;
 }) {
   return (
-    <CartForm
-      route="/cart"
-      action={CartForm.ACTIONS.BuyerIdentityUpdate}
-      inputs={{
-        buyerIdentity,
-      }}
-    >
-      <>
-        <input type="hidden" name="redirectTo" value={redirectTo} />
-        {children}
-      </>
-    </CartForm>
+    <Form method="get" action={redirectTo}>
+      {children}
+    </Form>
   );
 }
 

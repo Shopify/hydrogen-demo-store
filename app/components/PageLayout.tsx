@@ -1,14 +1,12 @@
-import {useParams, Form, Await, useRouteLoaderData} from '@remix-run/react';
+import {useParams, Form, Await, useRouteLoaderData} from 'react-router';
 import useWindowScroll from 'react-use/esm/useWindowScroll';
 import {Disclosure} from '@headlessui/react';
 import {Suspense, useEffect, useMemo} from 'react';
-import {CartForm} from '@shopify/hydrogen';
 
-import {type LayoutQuery} from 'storefrontapi.generated';
+import {useCart} from '~/lib/cart';
 import {Text, Heading, Section} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {Cart} from '~/components/Cart';
-import {CartLoading} from '~/components/CartLoading';
 import {Input} from '~/components/Input';
 import {Drawer, useDrawer} from '~/components/Drawer';
 import {CountrySelector} from '~/components/CountrySelector';
@@ -31,7 +29,8 @@ import type {RootLoader} from '~/root';
 
 type LayoutProps = {
   children: React.ReactNode;
-  layout?: LayoutQuery & {
+  layout?: {
+    shop: {name: string};
     headerMenu?: EnhancedMenu | null;
     footerMenu?: EnhancedMenu | null;
   };
@@ -74,7 +73,7 @@ function Header({title, menu}: {title: string; menu?: EnhancedMenu}) {
     closeDrawer: closeMenu,
   } = useDrawer();
 
-  const addToCartFetchers = useCartFetchers(CartForm.ACTIONS.LinesAdd);
+  const addToCartFetchers = useCartFetchers('add');
 
   // toggle cart drawer when adding to cart
   useEffect(() => {
@@ -105,17 +104,10 @@ function Header({title, menu}: {title: string; menu?: EnhancedMenu}) {
 }
 
 function CartDrawer({isOpen, onClose}: {isOpen: boolean; onClose: () => void}) {
-  const rootData = useRouteLoaderData<RootLoader>('root');
-  if (!rootData) return null;
-
   return (
     <Drawer open={isOpen} onClose={onClose} heading="Cart" openFrom="right">
       <div className="grid">
-        <Suspense fallback={<CartLoading />}>
-          <Await resolve={rootData?.cart}>
-            {(cart) => <Cart layout="drawer" onClose={onClose} cart={cart} />}
-          </Await>
-        </Suspense>
+        <Cart layout="drawer" onClose={onClose} />
       </div>
     </Drawer>
   );
@@ -343,21 +335,10 @@ function CartCount({
   isHome: boolean;
   openCart: () => void;
 }) {
-  const rootData = useRouteLoaderData<RootLoader>('root');
-  if (!rootData) return null;
+  const totalQuantity = useCart((state) => state.data.totalQuantity);
 
   return (
-    <Suspense fallback={<Badge count={0} dark={isHome} openCart={openCart} />}>
-      <Await resolve={rootData?.cart}>
-        {(cart) => (
-          <Badge
-            dark={isHome}
-            openCart={openCart}
-            count={cart?.totalQuantity || 0}
-          />
-        )}
-      </Await>
-    </Suspense>
+    <Badge dark={isHome} openCart={openCart} count={totalQuantity || 0} />
   );
 }
 

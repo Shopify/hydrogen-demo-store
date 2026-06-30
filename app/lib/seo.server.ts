@@ -1,32 +1,31 @@
-import {type SeoConfig} from '@shopify/hydrogen';
+import {type SeoConfig} from '~/lib/seo';
 import type {
-  Article,
-  Blog,
-  Collection,
-  Page,
-  Product,
-  ProductVariant,
-  ShopPolicy,
-  Image,
-} from '@shopify/hydrogen/storefront-api-types';
-import type {
-  Article as SeoArticle,
   BreadcrumbList,
-  Blog as SeoBlog,
   CollectionPage,
   Offer,
-  Organization,
-  Product as SeoProduct,
-  WebPage,
 } from 'schema-dts';
 
-import type {ShopFragment} from 'storefrontapi.generated';
+type SeoText = string | null | undefined;
+type SeoImageFields = {
+  url?: SeoText;
+  height?: number | null;
+  width?: number | null;
+  altText?: SeoText;
+};
+type SeoFields = {title?: SeoText; description?: SeoText} | null;
 
 function root({
   shop,
   url,
 }: {
-  shop: ShopFragment;
+  shop:
+    | {
+        name?: SeoText;
+        description?: SeoText;
+        brand?: {logo?: {image?: {url?: SeoText} | null} | null} | null;
+      }
+    | null
+    | undefined;
   url: Request['url'];
 }): SeoConfig {
   return {
@@ -42,8 +41,8 @@ function root({
     jsonLd: {
       '@context': 'https://schema.org',
       '@type': 'Organization',
-      name: shop.name,
-      logo: shop.brand?.logo?.image?.url,
+      name: shop?.name,
+      logo: shop?.brand?.logo?.image?.url,
       sameAs: [
         'https://twitter.com/shopify',
         'https://facebook.com/shopify',
@@ -79,20 +78,22 @@ function home({url}: {url: Request['url']}): SeoConfig {
   };
 }
 
-type SelectedVariantRequiredFields = Pick<ProductVariant, 'sku'> & {
-  image?: null | Partial<Image>;
+type SelectedVariantRequiredFields = {
+  sku?: SeoText;
+  image?: SeoImageFields | null;
 };
 
-type ProductRequiredFields = Pick<
-  Product,
-  'title' | 'description' | 'vendor' | 'seo'
-> & {
-  variants: Array<
-    Pick<
-      ProductVariant,
-      'sku' | 'price' | 'selectedOptions' | 'availableForSale'
-    >
-  >;
+type ProductRequiredFields = {
+  title: string;
+  description?: SeoText;
+  vendor?: SeoText;
+  seo?: SeoFields;
+  variants: Array<{
+    sku?: SeoText;
+    price: {amount: string; currencyCode: string};
+    selectedOptions: Array<{name: string; value: string}>;
+    availableForSale?: boolean | null;
+  }>;
 };
 
 function productJsonLd({
@@ -183,15 +184,13 @@ function product({
   };
 }
 
-type CollectionRequiredFields = Omit<
-  Collection,
-  'products' | 'descriptionHtml' | 'metafields' | 'image' | 'updatedAt'
-> & {
-  products: {nodes: Pick<Product, 'handle'>[]};
-  image?: null | Pick<Image, 'url' | 'height' | 'width' | 'altText'>;
-  descriptionHtml?: null | Collection['descriptionHtml'];
-  updatedAt?: null | Collection['updatedAt'];
-  metafields?: null | Collection['metafields'];
+type CollectionRequiredFields = {
+  handle: string;
+  title: string;
+  description?: SeoText;
+  seo?: SeoFields;
+  image?: SeoImageFields | null;
+  products: {nodes: Array<{handle: string}>};
 };
 
 function collectionJsonLd({
@@ -272,7 +271,7 @@ function collection({
 }
 
 type CollectionListRequiredFields = {
-  nodes: Omit<CollectionRequiredFields, 'products'>[];
+  nodes: Array<{handle: string}>;
 };
 
 function collectionsJsonLd({
@@ -325,14 +324,13 @@ function article({
   article,
   url,
 }: {
-  article: Pick<
-    Article,
-    'title' | 'contentHtml' | 'seo' | 'publishedAt' | 'excerpt'
-  > & {
-    image?: null | Pick<
-      NonNullable<Article['image']>,
-      'url' | 'height' | 'width' | 'altText'
-    >;
+  article: {
+    title: string;
+    contentHtml?: SeoText;
+    seo?: SeoFields;
+    publishedAt?: SeoText;
+    excerpt?: SeoText;
+    image?: SeoImageFields | null;
   };
   url: Request['url'];
 }): SeoConfig {
@@ -368,7 +366,7 @@ function blog({
   blog,
   url,
 }: {
-  blog: Pick<Blog, 'seo' | 'title'>;
+  blog: {seo?: SeoFields; title?: SeoText};
   url: Request['url'];
 }): SeoConfig {
   return {
@@ -390,7 +388,7 @@ function page({
   page,
   url,
 }: {
-  page: Pick<Page, 'title' | 'seo'>;
+  page: {title: string; seo?: SeoFields};
   url: Request['url'];
 }): SeoConfig {
   return {
@@ -410,7 +408,7 @@ function policy({
   policy,
   url,
 }: {
-  policy: Pick<ShopPolicy, 'title' | 'body'>;
+  policy: {title?: SeoText; body?: SeoText};
   url: Request['url'];
 }): SeoConfig {
   return {
@@ -425,7 +423,7 @@ function policies({
   policies,
   url,
 }: {
-  policies: Array<Pick<ShopPolicy, 'title' | 'handle'>>;
+  policies: Array<{title: string; handle: string}>;
   url: Request['url'];
 }): SeoConfig {
   const origin = new URL(url).origin;
@@ -483,7 +481,7 @@ export const seoPayload = {
  * truncate('Hello world', 5) // 'Hello...'
  * ```
  */
-function truncate(str: string, num = 155): string {
+function truncate(str: SeoText, num = 155): string {
   if (typeof str !== 'string') return '';
   if (str.length <= num) {
     return str;

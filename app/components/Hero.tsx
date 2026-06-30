@@ -1,12 +1,12 @@
 import clsx from 'clsx';
-import {MediaFile} from '@shopify/hydrogen';
+import {MediaFile} from '~/components/MediaFile';
 import type {
   MediaImage,
   Media,
   Video as MediaVideo,
 } from '@shopify/hydrogen/storefront-api-types';
 
-import type {CollectionContentFragment} from 'storefrontapi.generated';
+import type {CollectionContentFragment} from '~/data/fragments';
 import {Heading, Text} from '~/components/Text';
 import {Link} from '~/components/Link';
 

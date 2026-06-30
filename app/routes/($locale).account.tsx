@@ -1,19 +1,20 @@
 import {
+  data as dataResponse,
   Await,
   Form,
   Outlet,
   useLoaderData,
   useMatches,
   useOutlet,
-} from '@remix-run/react';
+} from 'react-router';
 import {Suspense} from 'react';
-import {defer, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {flattenConnection} from '@shopify/hydrogen';
+import {type LoaderFunctionArgs} from 'react-router';
 
+import {flattenConnection} from '~/lib/flatten-connection';
 import type {
   CustomerDetailsFragment,
   OrderCardFragment,
-} from 'customer-accountapi.generated';
+} from '~/graphql/customer-account/types';
 import {PageHeader, Text} from '~/components/Text';
 import {Button} from '~/components/Button';
 import {OrderCard} from '~/components/OrderCard';
@@ -25,6 +26,10 @@ import {FeaturedCollections} from '~/components/FeaturedCollections';
 import {usePrefixPathWithLocale} from '~/lib/utils';
 import {CACHE_NONE, routeHeaders} from '~/data/cache';
 import {CUSTOMER_DETAILS_QUERY} from '~/graphql/customer-account/CustomerDetailsQuery';
+import {
+  customerAccountContext,
+  storefrontContext,
+} from '~/storefront.context';
 
 import {doLogout} from './($locale).account_.logout';
 import {
@@ -35,9 +40,9 @@ import {
 export const headers = routeHeaders;
 
 export async function loader({request, context, params}: LoaderFunctionArgs) {
-  const {data, errors} = await context.customerAccount.query(
-    CUSTOMER_DETAILS_QUERY,
-  );
+  const {data, errors} = await context
+    .get(customerAccountContext)
+    .query(CUSTOMER_DETAILS_QUERY);
 
   /**
    * If the customer failed to load, we assume their access token is invalid.
@@ -54,11 +59,11 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
       : `Welcome to your account.`
     : 'Account Details';
 
-  return defer(
+  return dataResponse(
     {
       customer,
       heading,
-      featuredDataPromise: getFeaturedData(context.storefront),
+      featuredDataPromise: getFeaturedData(context.get(storefrontContext)),
     },
     {
       headers: {

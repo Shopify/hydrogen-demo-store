@@ -1,56 +1,51 @@
-import {
-  json,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
-import type {Collection} from '@shopify/hydrogen/storefront-api-types';
-import {
-  Image,
-  Pagination,
-  getPaginationVariables,
-  getSeoMeta,
-} from '@shopify/hydrogen';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData} from 'react-router';
+import {gql} from '@shopify/hydrogen';
 
+import {Image} from '~/components/Image';
+import {Pagination} from '~/components/Pagination';
+import {getPaginationVariables} from '~/lib/pagination';
 import {Grid} from '~/components/Grid';
 import {Heading, PageHeader, Section} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {Button} from '~/components/Button';
 import {getImageLoadingPriority} from '~/lib/const';
 import {seoPayload} from '~/lib/seo.server';
+import {generateSeoMeta} from '~/lib/seo';
 import {routeHeaders} from '~/data/cache';
+import {storefrontContext} from '~/storefront.context';
+import type {ResultOf} from '~/lib/graphql-types';
 
 const PAGINATION_SIZE = 4;
 
+type CollectionNode = NonNullable<
+  ResultOf<typeof COLLECTIONS_QUERY>['collections']
+>['nodes'][number];
+
 export const headers = routeHeaders;
 
-export const loader = async ({
-  request,
-  context: {storefront},
-}: LoaderFunctionArgs) => {
+export const loader = async ({request, context}: LoaderFunctionArgs) => {
+  const client = context.get(storefrontContext);
   const variables = getPaginationVariables(request, {pageBy: PAGINATION_SIZE});
-  const {collections} = await storefront.query(COLLECTIONS_QUERY, {
-    variables: {
-      ...variables,
-      country: storefront.i18n.country,
-      language: storefront.i18n.language,
-    },
-  });
+  const {data} = await client.graphql(COLLECTIONS_QUERY, {variables});
+  const collections = data?.collections;
 
   const seo = seoPayload.listCollections({
-    collections,
+    collections: collections ?? {nodes: []},
     url: request.url,
   });
 
-  return json({collections, seo});
+  return {collections, seo};
 };
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+  return generateSeoMeta(...matches.map((match) => (match.data as any)?.seo));
 };
 
 export default function Collections() {
   const {collections} = useLoaderData<typeof loader>();
+
+  if (!collections) return null;
 
   return (
     <>
@@ -70,7 +65,7 @@ export default function Collections() {
               >
                 {nodes.map((collection, i) => (
                   <CollectionCard
-                    collection={collection as Collection}
+                    collection={collection}
                     key={collection.id}
                     loading={getImageLoadingPriority(i, 2)}
                   />
@@ -93,7 +88,7 @@ function CollectionCard({
   collection,
   loading,
 }: {
-  collection: Collection;
+  collection: CollectionNode;
   loading?: HTMLImageElement['loading'];
 }) {
   return (
@@ -119,7 +114,7 @@ function CollectionCard({
   );
 }
 
-const COLLECTIONS_QUERY = `#graphql
+const COLLECTIONS_QUERY = gql(`
   query Collections(
     $country: CountryCode
     $language: LanguageCode
@@ -154,4 +149,4 @@ const COLLECTIONS_QUERY = `#graphql
       }
     }
   }
-`;
+`);

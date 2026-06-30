@@ -1,20 +1,21 @@
-import {json, redirect, type ActionFunction} from '@shopify/remix-oxygen';
+import {data, redirect, type ActionFunction} from 'react-router';
 import {
   useActionData,
   Form,
   useOutletContext,
   useNavigation,
-} from '@remix-run/react';
+} from 'react-router';
 import type {
   Customer,
   CustomerUpdateInput,
-} from '@shopify/hydrogen/customer-account-api-types';
+} from '~/graphql/customer-account/types';
 import invariant from 'tiny-invariant';
 
 import {Button} from '~/components/Button';
 import {Text} from '~/components/Text';
 import {getInputStyleClasses} from '~/lib/utils';
 import {CUSTOMER_UPDATE_MUTATION} from '~/graphql/customer-account/CustomerUpdateMutation';
+import {customerAccountContext} from '~/storefront.context';
 
 import {doLogout} from './($locale).account_.logout';
 
@@ -50,9 +51,11 @@ export const handle = {
 export const action: ActionFunction = async ({request, context, params}) => {
   const formData = await request.formData();
 
+  const customerAccount = context.get(customerAccountContext);
+
   // Double-check current user is logged in.
   // Will throw a logout redirect if not.
-  if (!(await context.customerAccount.isLoggedIn())) {
+  if (!(await customerAccount.isLoggedIn())) {
     throw await doLogout(context);
   }
 
@@ -64,7 +67,7 @@ export const action: ActionFunction = async ({request, context, params}) => {
     formDataHas(formData, 'lastName') &&
       (customer.lastName = formData.get('lastName') as string);
 
-    const {data, errors} = await context.customerAccount.mutate(
+    const {data, errors} = await customerAccount.mutate(
       CUSTOMER_UPDATE_MUTATION,
       {
         variables: {
@@ -82,7 +85,7 @@ export const action: ActionFunction = async ({request, context, params}) => {
 
     return redirect(params?.locale ? `${params.locale}/account` : '/account');
   } catch (error: any) {
-    return json(
+    return data(
       {formError: error?.message},
       {
         status: 400,

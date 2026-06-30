@@ -1,17 +1,11 @@
-import {
-  defer,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {Await, Form, useLoaderData} from '@remix-run/react';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {Await, Form, useLoaderData} from 'react-router';
 import {Suspense} from 'react';
-import {
-  Pagination,
-  getPaginationVariables,
-  Analytics,
-  getSeoMeta,
-} from '@shopify/hydrogen';
+import {gql} from '@shopify/hydrogen';
+import type {RequestScopedPrivateStorefrontClient} from '@shopify/hydrogen';
 
+import {Pagination} from '~/components/Pagination';
+import {getPaginationVariables} from '~/lib/pagination';
 import {Heading, PageHeader, Section, Text} from '~/components/Text';
 import {Input} from '~/components/Input';
 import {Grid} from '~/components/Grid';
@@ -21,61 +15,64 @@ import {FeaturedCollections} from '~/components/FeaturedCollections';
 import {PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
 import {getImageLoadingPriority, PAGINATION_SIZE} from '~/lib/const';
 import {seoPayload} from '~/lib/seo.server';
+import {generateSeoMeta} from '~/lib/seo';
+import {storefrontContext} from '~/storefront.context';
 
 import {
   getFeaturedData,
   type FeaturedData,
 } from './($locale).featured-products';
 
-export async function loader({
-  request,
-  context: {storefront},
-}: LoaderFunctionArgs) {
+export async function loader({request, context}: LoaderFunctionArgs) {
+  const client = context.get(storefrontContext);
   const searchParams = new URL(request.url).searchParams;
   const searchTerm = searchParams.get('q')!;
   const variables = getPaginationVariables(request, {pageBy: 8});
 
-  const {products} = await storefront.query(SEARCH_QUERY, {
+  const {data} = await client.graphql(SEARCH_QUERY, {
     variables: {
       searchTerm,
       ...variables,
-      country: storefront.i18n.country,
-      language: storefront.i18n.language,
     },
   });
 
+  const products = data?.products ?? {
+    nodes: [],
+    pageInfo: {
+      hasNextPage: false,
+      hasPreviousPage: false,
+      startCursor: null,
+      endCursor: null,
+    },
+  };
   const shouldGetRecommendations = !searchTerm || products?.nodes?.length === 0;
 
   const seo = seoPayload.collection({
     url: request.url,
     collection: {
-      id: 'search',
       title: 'Search',
       handle: 'search',
-      descriptionHtml: 'Search results',
       description: 'Search results',
       seo: {
         title: 'Search',
         description: `Showing ${products.nodes.length} search results for "${searchTerm}"`,
       },
-      metafields: [],
       products,
-      updatedAt: new Date().toISOString(),
     },
   });
 
-  return defer({
+  return {
     seo,
     searchTerm,
     products,
     noResultRecommendations: shouldGetRecommendations
-      ? getNoResultRecommendations(storefront)
+      ? getNoResultRecommendations(client)
       : Promise.resolve(null),
-  });
+  };
 }
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+  return generateSeoMeta(...matches.map((match) => (match.data as any)?.seo));
 };
 
 export default function Search() {
@@ -138,7 +135,6 @@ export default function Search() {
           </Pagination>
         </Section>
       )}
-      <Analytics.SearchView data={{searchTerm, searchResults: products}} />
     </>
   );
 }
@@ -188,12 +184,13 @@ function NoResults({
 }
 
 export function getNoResultRecommendations(
-  storefront: LoaderFunctionArgs['context']['storefront'],
+  client: RequestScopedPrivateStorefrontClient,
 ) {
-  return getFeaturedData(storefront, {pageBy: PAGINATION_SIZE});
+  return getFeaturedData(client, {pageBy: PAGINATION_SIZE});
 }
 
-const SEARCH_QUERY = `#graphql
+const SEARCH_QUERY = gql(
+  `#graphql
   query PaginatedProductsSearch(
     $country: CountryCode
     $endCursor: String
@@ -222,6 +219,6 @@ const SEARCH_QUERY = `#graphql
       }
     }
   }
-
-  ${PRODUCT_CARD_FRAGMENT}
-` as const;
+`,
+  [PRODUCT_CARD_FRAGMENT],
+);

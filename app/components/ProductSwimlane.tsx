@@ -1,12 +1,13 @@
-import type {HomepageFeaturedProductsQuery} from 'storefrontapi.generated';
 import {Section} from '~/components/Text';
 import {ProductCard} from '~/components/ProductCard';
+import type {ProductCardFragment} from '~/data/fragments';
 
 const mockProducts = {
   nodes: new Array(12).fill(''),
 };
 
-type ProductSwimlaneProps = HomepageFeaturedProductsQuery & {
+type ProductSwimlaneProps = {
+  products?: {nodes: ProductCardFragment[]};
   title?: string;
   count?: number;
 };

@@ -1,4 +1,7 @@
-import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {redirect, type LoaderFunctionArgs} from 'react-router';
+import {cartQueries, createCartCookie, getCartId} from '@shopify/hydrogen';
+
+import {storefrontContext} from '~/storefront.context';
 
 /**
  * Automatically applies a discount found on the url
@@ -13,9 +16,7 @@ import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
  * @preserve
  */
 export async function loader({request, context, params}: LoaderFunctionArgs) {
-  const {cart} = context;
-  // N.B. This route will probably be removed in the future.
-  const session = context.session as any;
+  const client = context.get(storefrontContext);
   const {code} = params;
 
   const url = new URL(request.url);
@@ -24,7 +25,6 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
     searchParams.get('redirect') || searchParams.get('return_to') || '/';
 
   if (redirectParam.includes('//')) {
-    // Avoid redirecting to external URLs to prevent phishing attacks
     redirectParam = '/';
   }
 
@@ -37,12 +37,26 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
     return redirect(redirectUrl);
   }
 
-  const result = await cart.updateDiscountCodes([code]);
-  const headers = cart.setCartId(result.cart.id);
+  const cartId = getCartId(request);
 
-  // Using set-cookie on a 303 redirect will not work if the domain origin have port number (:3000)
-  // If there is no cart id and a new cart id is created in the progress, it will not be set in the cookie
-  // on localhost:3000
+  let cartResult;
+  if (cartId) {
+    const {data} = await client.graphql(cartQueries.cartDiscountCodesUpdate, {
+      variables: {cartId, discountCodes: [code]},
+    });
+    cartResult = (data as any)?.cartDiscountCodesUpdate?.cart;
+  } else {
+    const {data} = await client.graphql(cartQueries.cartCreate, {
+      variables: {input: {discountCodes: [code]}},
+    });
+    cartResult = (data as any)?.cartCreate?.cart;
+  }
+
+  const headers = new Headers();
+  if (cartResult?.id) {
+    headers.append('Set-Cookie', createCartCookie(cartResult.id));
+  }
+
   return redirect(redirectUrl, {
     status: 303,
     headers,

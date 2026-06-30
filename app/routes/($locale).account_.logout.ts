@@ -1,13 +1,15 @@
 import {
   redirect,
   type ActionFunction,
-  type AppLoadContext,
+  type RouterContextProvider,
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
-} from '@shopify/remix-oxygen';
+} from 'react-router';
 
-export async function doLogout(context: AppLoadContext) {
-  return context.customerAccount.logout();
+import {customerAccountContext} from '~/storefront.context';
+
+export async function doLogout(context: Readonly<RouterContextProvider>) {
+  return context.get(customerAccountContext).logout();
 }
 
 export async function loader({params}: LoaderFunctionArgs) {

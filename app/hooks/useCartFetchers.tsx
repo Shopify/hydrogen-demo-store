@@ -1,16 +1,16 @@
-import {useFetchers} from '@remix-run/react';
-import {CartForm} from '@shopify/hydrogen';
+import {useFetchers} from 'react-router';
 
-export function useCartFetchers(actionName: string) {
+export function useCartFetchers(intent: string) {
   const fetchers = useFetchers();
   const cartFetchers = [];
 
   for (const fetcher of fetchers) {
-    if (fetcher.formData) {
-      const formInputs = CartForm.getFormInput(fetcher.formData);
-      if (formInputs.action === actionName) {
-        cartFetchers.push(fetcher);
-      }
+    if (
+      fetcher.formData &&
+      fetcher.formAction?.includes('/api/cart') &&
+      fetcher.formData.get('intent') === intent
+    ) {
+      cartFetchers.push(fetcher);
     }
   }
   return cartFetchers;

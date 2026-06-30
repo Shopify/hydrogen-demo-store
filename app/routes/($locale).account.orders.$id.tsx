@@ -1,14 +1,18 @@
 import clsx from 'clsx';
-import {json, redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {useLoaderData, type MetaFunction} from '@remix-run/react';
-import {Money, Image, flattenConnection} from '@shopify/hydrogen';
-import type {FulfillmentStatus} from '@shopify/hydrogen/customer-account-api-types';
-
-import type {OrderFragment} from 'customer-accountapi.generated';
+import {redirect, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData, type MetaFunction} from 'react-router';
+import {Money} from '~/components/Money';
+import {Image} from '~/components/Image';
+import {flattenConnection} from '~/lib/flatten-connection';
+import type {
+  FulfillmentStatus,
+  OrderFragment,
+} from '~/graphql/customer-account/types';
 import {statusMessage} from '~/lib/utils';
 import {Link} from '~/components/Link';
 import {Heading, PageHeader, Text} from '~/components/Text';
 import {CUSTOMER_ORDER_QUERY} from '~/graphql/customer-account/CustomerOrderQuery';
+import {customerAccountContext} from '~/storefront.context';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Order ${data?.order?.name}`}];
@@ -27,10 +31,9 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
       ? `gid://shopify/Order/${params.id}?key=${orderToken}`
       : `gid://shopify/Order/${params.id}`;
 
-    const {data, errors} = await context.customerAccount.query(
-      CUSTOMER_ORDER_QUERY,
-      {variables: {orderId}},
-    );
+    const {data, errors} = await context
+      .get(customerAccountContext)
+      .query(CUSTOMER_ORDER_QUERY, {variables: {orderId}});
 
     if (errors?.length || !data?.order || !data?.order?.lineItems) {
       throw new Error('order information');
@@ -58,13 +61,13 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
         ? fulfillments[0].status
         : ('OPEN' as FulfillmentStatus);
 
-    return json({
+    return {
       order,
       lineItems,
       discountValue,
       discountPercentage,
       fulfillmentStatus,
-    });
+    };
   } catch (error) {
     throw new Response(error instanceof Error ? error.message : undefined, {
       status: 404,

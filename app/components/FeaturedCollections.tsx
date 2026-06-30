@@ -1,4 +1,4 @@
-import {Image} from '@shopify/hydrogen';
+import {Image} from '~/components/Image';
 
 import type {HomepageFeaturedCollectionsQuery} from 'storefrontapi.generated';
 import {Heading, Section} from '~/components/Text';

@@ -1,27 +1,26 @@
-import {
-  json,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
+import {useLoaderData} from 'react-router';
 import invariant from 'tiny-invariant';
-import {getSeoMeta} from '@shopify/hydrogen';
+import {gql} from '@shopify/hydrogen';
 
 import {PageHeader} from '~/components/Text';
 import {routeHeaders} from '~/data/cache';
 import {seoPayload} from '~/lib/seo.server';
+import {generateSeoMeta} from '~/lib/seo';
+import {storefrontContext} from '~/storefront.context';
 
 export const headers = routeHeaders;
 
 export async function loader({request, params, context}: LoaderFunctionArgs) {
   invariant(params.pageHandle, 'Missing page handle');
 
-  const {page} = await context.storefront.query(PAGE_QUERY, {
+  const client = context.get(storefrontContext);
+  const {data} = await client.graphql(PAGE_QUERY, {
     variables: {
       handle: params.pageHandle,
-      language: context.storefront.i18n.language,
     },
   });
+  const page = data?.page;
 
   if (!page) {
     throw new Response(null, {status: 404});
@@ -29,11 +28,11 @@ export async function loader({request, params, context}: LoaderFunctionArgs) {
 
   const seo = seoPayload.page({page, url: request.url});
 
-  return json({page, seo});
+  return {page, seo};
 }
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+  return generateSeoMeta(...matches.map((match) => (match.data as any)?.seo));
 };
 
 export default function Page() {
@@ -51,7 +50,7 @@ export default function Page() {
   );
 }
 
-const PAGE_QUERY = `#graphql
+const PAGE_QUERY = gql(`
   query PageDetails($language: LanguageCode, $handle: String!)
   @inContext(language: $language) {
     page(handle: $handle) {
@@ -64,4 +63,4 @@ const PAGE_QUERY = `#graphql
       }
     }
   }
-`;
+`);

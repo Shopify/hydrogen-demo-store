@@ -1,16 +1,19 @@
 import {
-  json,
   type MetaArgs,
   type LinksFunction,
   type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
-import {getSeoMeta, Image} from '@shopify/hydrogen';
+} from 'react-router';
+import {useLoaderData} from 'react-router';
+import {gql} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
+import {Image} from '~/components/Image';
 import {PageHeader, Section} from '~/components/Text';
 import {seoPayload} from '~/lib/seo.server';
+import {generateSeoMeta} from '~/lib/seo';
 import {routeHeaders} from '~/data/cache';
+import {getLocaleFromRequest} from '~/lib/utils';
+import {storefrontContext} from '~/storefront.context';
 
 import styles from '../styles/custom-font.css?url';
 
@@ -23,17 +26,18 @@ export const links: LinksFunction = () => {
 };
 
 export async function loader({request, params, context}: LoaderFunctionArgs) {
-  const {language, country} = context.storefront.i18n;
+  const client = context.get(storefrontContext);
+  const {language, country} = getLocaleFromRequest(request);
 
   invariant(params.journalHandle, 'Missing journal handle');
 
-  const {blog} = await context.storefront.query(ARTICLE_QUERY, {
+  const {data} = await client.graphql(ARTICLE_QUERY, {
     variables: {
       blogHandle: BLOG_HANDLE,
       articleHandle: params.journalHandle,
-      language,
     },
   });
+  const blog = data?.blog;
 
   if (!blog?.articleByHandle) {
     throw new Response(null, {status: 404});
@@ -49,11 +53,11 @@ export async function loader({request, params, context}: LoaderFunctionArgs) {
 
   const seo = seoPayload.article({article, url: request.url});
 
-  return json({article, formattedDate, seo});
+  return {article, formattedDate, seo};
 }
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+  return generateSeoMeta(...matches.map((match) => (match.data as any)?.seo));
 };
 
 export default function Article() {
@@ -86,7 +90,7 @@ export default function Article() {
   );
 }
 
-const ARTICLE_QUERY = `#graphql
+const ARTICLE_QUERY = gql(`
   query ArticleDetails(
     $language: LanguageCode
     $blogHandle: String!
@@ -114,4 +118,4 @@ const ARTICLE_QUERY = `#graphql
       }
     }
   }
-`;
+`);

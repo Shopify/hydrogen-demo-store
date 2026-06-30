@@ -1,34 +1,33 @@
-import type {AppLoadContext, EntryContext} from '@shopify/remix-oxygen';
-import {RemixServer} from '@remix-run/react';
-import isbot from 'isbot';
+import type {EntryContext} from 'react-router';
+import {RouterContextProvider, ServerRouter} from 'react-router';
+import {isbot} from 'isbot';
 import {renderToReadableStream} from 'react-dom/server';
-import {createContentSecurityPolicy} from '@shopify/hydrogen';
+import {oxygenContext} from '~/storefront.context';
+import {createCSPHeader, generateNonce} from '~/lib/csp';
+import {NonceProvider} from '~/lib/nonce';
 
 export default async function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  remixContext: EntryContext,
-  context: AppLoadContext,
+  reactRouterContext: EntryContext,
+  context: RouterContextProvider,
 ) {
-  const {nonce, header, NonceProvider} = createContentSecurityPolicy({
-    shop: {
-      checkoutDomain: context.env.PUBLIC_CHECKOUT_DOMAIN,
-      storeDomain: context.env.PUBLIC_STORE_DOMAIN,
-    },
-    scriptSrc: [
-      'self',
-      'https://cdn.shopify.com',
-      'https://shopify.com',
-      'https://www.google-analytics.com',
-      'https://www.googletagmanager.com',
-      ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:*'] : []),
-    ],
+  const {env} = context.get(oxygenContext);
+  const nonce = generateNonce();
+  const header = createCSPHeader({
+    nonce,
+    storeDomain: env.PUBLIC_STORE_DOMAIN,
+    checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
   });
 
   const body = await renderToReadableStream(
-    <NonceProvider>
-      <RemixServer context={remixContext} url={request.url} />
+    <NonceProvider value={nonce}>
+      <ServerRouter
+        context={reactRouterContext}
+        url={request.url}
+        nonce={nonce}
+      />
     </NonceProvider>,
     {
       nonce,
