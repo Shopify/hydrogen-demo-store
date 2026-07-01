@@ -1,9 +1,10 @@
-import {defineConfig, loadEnv} from 'vite';
+import {defineConfig} from 'vite';
+import {hydrogen} from '@shopify/hydrogen-classic/vite';
 import {oxygen} from '@shopify/mini-oxygen/vite';
 import {reactRouter} from '@react-router/dev/vite';
 
-export default defineConfig(({mode}) => ({
-  plugins: [oxygen({env: loadEnv(mode, process.cwd(), '')}), reactRouter()],
+export default defineConfig({
+  plugins: [hydrogen(), oxygen(), reactRouter()],
   resolve: {
     tsconfigPaths: true,
   },
@@ -38,4 +39,4 @@ export default defineConfig(({mode}) => ({
     // withtout inlining assets as base64:
     assetsInlineLimit: 0,
   },
-}));
+});
