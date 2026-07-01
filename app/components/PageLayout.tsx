@@ -1,7 +1,7 @@
 import {useParams, Form, Await, useRouteLoaderData} from 'react-router';
 import useWindowScroll from 'react-use/esm/useWindowScroll';
 import {Disclosure} from '@headlessui/react';
-import {Suspense, useEffect, useMemo} from 'react';
+import {Suspense, useEffect, useMemo, useRef} from 'react';
 
 import {useCart} from '~/lib/cart';
 import {Text, Heading, Section} from '~/components/Text';
@@ -24,7 +24,6 @@ import {
   useIsHomePath,
 } from '~/lib/utils';
 import {useIsHydrated} from '~/hooks/useIsHydrated';
-import {useCartFetchers} from '~/hooks/useCartFetchers';
 import type {RootLoader} from '~/root';
 
 type LayoutProps = {
@@ -73,13 +72,15 @@ function Header({title, menu}: {title: string; menu?: EnhancedMenu}) {
     closeDrawer: closeMenu,
   } = useDrawer();
 
-  const addToCartFetchers = useCartFetchers('add');
+  const cartLinesPending = useCart((state) => state.pending.lines.size > 0);
+  const wasPending = useRef(cartLinesPending);
 
-  // toggle cart drawer when adding to cart
   useEffect(() => {
-    if (isCartOpen || !addToCartFetchers.length) return;
-    openCart();
-  }, [addToCartFetchers, isCartOpen, openCart]);
+    if (cartLinesPending && !wasPending.current && !isCartOpen) {
+      openCart();
+    }
+    wasPending.current = cartLinesPending;
+  }, [cartLinesPending, isCartOpen, openCart]);
 
   return (
     <>

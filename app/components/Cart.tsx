@@ -260,7 +260,7 @@ function CartLineItem({line}: {line: CartLineNode}) {
                 {...register('quantity', {value: quantity, interactive: true})}
                 aria-label="Quantity"
                 className={clsx(
-                  'px-2 w-12 text-center bg-transparent',
+                  'px-2 w-8 text-center bg-transparent appearance-none border-0 focus:outline-none focus:ring-0',
                   isPending ? 'opacity-30' : '',
                 )}
               />

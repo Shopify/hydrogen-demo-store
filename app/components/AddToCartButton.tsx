@@ -1,7 +1,6 @@
-import {useFetcher} from 'react-router';
-
 import {Button} from '~/components/Button';
-import {usePrefixPathWithLocale} from '~/lib/utils';
+import {useCartForm} from '~/lib/cart';
+import {useIsHydrated} from '~/hooks/useIsHydrated';
 
 type LineInput = {merchandiseId: string; quantity: number};
 
@@ -22,26 +21,26 @@ export function AddToCartButton({
   disabled?: boolean;
   [key: string]: any;
 }) {
-  const fetcher = useFetcher();
-  const action = usePrefixPathWithLocale('/api/cart');
+  const {formProps, register} = useCartForm();
+  const isHydrated = useIsHydrated();
   const [line] = lines;
 
   return (
-    <fetcher.Form method="post" action={action}>
-      <input type="hidden" name="intent" value="add" />
-      <input type="hidden" name="merchandiseId" value={line?.merchandiseId} />
-      <input type="hidden" name="quantity" value={line?.quantity ?? 1} />
+    <form {...formProps()}>
+      <input type="hidden" {...register('merchandiseId', {value: line?.merchandiseId})} />
+      <input type="hidden" {...register('quantity', {value: line?.quantity ?? 1})} />
       <Button
         as="button"
         type="submit"
         width={width}
         variant={variant}
         className={className}
-        disabled={disabled ?? fetcher.state !== 'idle'}
+        disabled={disabled ?? !isHydrated}
+        {...register('add')}
         {...props}
       >
         {children}
       </Button>
-    </fetcher.Form>
+    </form>
   );
 }
