@@ -1,4 +1,10 @@
-import {useParams, Form, Await, useRouteLoaderData} from 'react-router';
+import {
+  useParams,
+  Form,
+  Await,
+  useLocation,
+  useRouteLoaderData,
+} from 'react-router';
 import useWindowScroll from 'react-use/esm/useWindowScroll';
 import {Disclosure} from '@headlessui/react';
 import {Suspense, useEffect, useMemo, useRef} from 'react';
@@ -37,18 +43,30 @@ type LayoutProps = {
 
 export function PageLayout({children, layout}: LayoutProps) {
   const {headerMenu, footerMenu} = layout || {};
+  const {pathname} = useLocation();
+  const previousPathname = useRef(pathname);
+
+  useEffect(() => {
+    if (previousPathname.current === pathname) return;
+    previousPathname.current = pathname;
+    document.getElementById('mainContent')?.focus({preventScroll: true});
+  }, [pathname]);
+
   return (
     <>
       <div className="flex flex-col min-h-screen">
         <div className="">
-          <a href="#mainContent" className="sr-only">
+          <a
+            href="#mainContent"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-contrast focus:text-primary focus:rounded focus:shadow"
+          >
             Skip to content
           </a>
         </div>
         {headerMenu && layout?.shop.name && (
           <Header title={layout.shop.name} menu={headerMenu} />
         )}
-        <main role="main" id="mainContent" className="flex-grow">
+        <main role="main" id="mainContent" tabIndex={-1} className="flex-grow">
           {children}
         </main>
       </div>
@@ -375,6 +393,8 @@ function Badge({
   return isHydrated ? (
     <button
       onClick={openCart}
+      aria-label={`Open cart, ${count || 0} items`}
+      aria-haspopup="dialog"
       className="relative flex items-center justify-center w-8 h-8 focus:ring-primary/5"
     >
       {BadgeCounter}
@@ -382,6 +402,7 @@ function Badge({
   ) : (
     <Link
       to="/cart"
+      aria-label={`Cart, ${count || 0} items`}
       className="relative flex items-center justify-center w-8 h-8 focus:ring-primary/5"
     >
       {BadgeCounter}

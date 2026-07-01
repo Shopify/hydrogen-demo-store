@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "shopify hydrogen dev",
+    "dev:customer": "shopify hydrogen dev --customer-account-push",
     "build": "shopify hydrogen build --no-lockfile-check",
     "preview": "shopify hydrogen preview --build",
     "e2e": "npx playwright test",
@@ -13,7 +14,7 @@
     "lint": "eslint --no-error-on-unmatched-pattern --ext .js,.ts,.jsx,.tsx .",
     "format": "prettier --write --ignore-unknown .",
     "format:check": "prettier --check --ignore-unknown .",
-    "typecheck": "react-router typegen && tsc --noEmit",
+    "typecheck": "react-router typegen && tsc --noEmit && gql.tada check",
     "gql:check": "gql.tada check"
   },
   "browserslist": [
