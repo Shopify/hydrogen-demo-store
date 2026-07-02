@@ -1,10 +1,3 @@
-import {
-  CacheLong,
-  CacheNone,
-  CacheShort,
-  generateCacheControlHeader,
-} from '@shopify/hydrogen';
-
 export function routeHeaders({loaderHeaders}: {loaderHeaders: Headers}) {
   // Keep the same cache-control headers when loading the page directly
   // versus when transititioning to the page from other areas in the app
@@ -13,6 +6,7 @@ export function routeHeaders({loaderHeaders}: {loaderHeaders: Headers}) {
   };
 }
 
-export const CACHE_SHORT = generateCacheControlHeader(CacheShort());
-export const CACHE_LONG = generateCacheControlHeader(CacheLong());
-export const CACHE_NONE = generateCacheControlHeader(CacheNone());
+export const CACHE_SHORT = 'public, max-age=1, stale-while-revalidate=9';
+export const CACHE_LONG =
+  'public, max-age=3600, stale-while-revalidate=82800';
+export const CACHE_NONE = 'no-store';

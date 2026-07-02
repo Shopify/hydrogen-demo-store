@@ -1,14 +1,18 @@
-import {useParams, Form, Await, useRouteLoaderData} from '@remix-run/react';
+import {
+  useParams,
+  Form,
+  Await,
+  useLocation,
+  useRouteLoaderData,
+} from 'react-router';
 import useWindowScroll from 'react-use/esm/useWindowScroll';
 import {Disclosure} from '@headlessui/react';
-import {Suspense, useEffect, useMemo} from 'react';
-import {CartForm} from '@shopify/hydrogen';
+import {Suspense, useEffect, useMemo, useRef} from 'react';
 
-import {type LayoutQuery} from 'storefrontapi.generated';
+import {useCart} from '~/lib/cart';
 import {Text, Heading, Section} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {Cart} from '~/components/Cart';
-import {CartLoading} from '~/components/CartLoading';
 import {Input} from '~/components/Input';
 import {Drawer, useDrawer} from '~/components/Drawer';
 import {CountrySelector} from '~/components/CountrySelector';
@@ -26,12 +30,12 @@ import {
   useIsHomePath,
 } from '~/lib/utils';
 import {useIsHydrated} from '~/hooks/useIsHydrated';
-import {useCartFetchers} from '~/hooks/useCartFetchers';
 import type {RootLoader} from '~/root';
 
 type LayoutProps = {
   children: React.ReactNode;
-  layout?: LayoutQuery & {
+  layout?: {
+    shop: {name: string};
     headerMenu?: EnhancedMenu | null;
     footerMenu?: EnhancedMenu | null;
   };
@@ -39,18 +43,30 @@ type LayoutProps = {
 
 export function PageLayout({children, layout}: LayoutProps) {
   const {headerMenu, footerMenu} = layout || {};
+  const {pathname} = useLocation();
+  const previousPathname = useRef(pathname);
+
+  useEffect(() => {
+    if (previousPathname.current === pathname) return;
+    previousPathname.current = pathname;
+    document.getElementById('mainContent')?.focus({preventScroll: true});
+  }, [pathname]);
+
   return (
     <>
       <div className="flex flex-col min-h-screen">
         <div className="">
-          <a href="#mainContent" className="sr-only">
+          <a
+            href="#mainContent"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-contrast focus:text-primary focus:rounded focus:shadow"
+          >
             Skip to content
           </a>
         </div>
         {headerMenu && layout?.shop.name && (
           <Header title={layout.shop.name} menu={headerMenu} />
         )}
-        <main role="main" id="mainContent" className="flex-grow">
+        <main role="main" id="mainContent" tabIndex={-1} className="flex-grow">
           {children}
         </main>
       </div>
@@ -74,13 +90,15 @@ function Header({title, menu}: {title: string; menu?: EnhancedMenu}) {
     closeDrawer: closeMenu,
   } = useDrawer();
 
-  const addToCartFetchers = useCartFetchers(CartForm.ACTIONS.LinesAdd);
+  const cartLinesPending = useCart((state) => state.pending.lines.size > 0);
+  const wasPending = useRef(cartLinesPending);
 
-  // toggle cart drawer when adding to cart
   useEffect(() => {
-    if (isCartOpen || !addToCartFetchers.length) return;
-    openCart();
-  }, [addToCartFetchers, isCartOpen, openCart]);
+    if (cartLinesPending && !wasPending.current && !isCartOpen) {
+      openCart();
+    }
+    wasPending.current = cartLinesPending;
+  }, [cartLinesPending, isCartOpen, openCart]);
 
   return (
     <>
@@ -105,17 +123,10 @@ function Header({title, menu}: {title: string; menu?: EnhancedMenu}) {
 }
 
 function CartDrawer({isOpen, onClose}: {isOpen: boolean; onClose: () => void}) {
-  const rootData = useRouteLoaderData<RootLoader>('root');
-  if (!rootData) return null;
-
   return (
     <Drawer open={isOpen} onClose={onClose} heading="Cart" openFrom="right">
       <div className="grid">
-        <Suspense fallback={<CartLoading />}>
-          <Await resolve={rootData?.cart}>
-            {(cart) => <Cart layout="drawer" onClose={onClose} cart={cart} />}
-          </Await>
-        </Suspense>
+        <Cart layout="drawer" onClose={onClose} />
       </div>
     </Drawer>
   );
@@ -343,21 +354,10 @@ function CartCount({
   isHome: boolean;
   openCart: () => void;
 }) {
-  const rootData = useRouteLoaderData<RootLoader>('root');
-  if (!rootData) return null;
+  const totalQuantity = useCart((state) => state.data.totalQuantity);
 
   return (
-    <Suspense fallback={<Badge count={0} dark={isHome} openCart={openCart} />}>
-      <Await resolve={rootData?.cart}>
-        {(cart) => (
-          <Badge
-            dark={isHome}
-            openCart={openCart}
-            count={cart?.totalQuantity || 0}
-          />
-        )}
-      </Await>
-    </Suspense>
+    <Badge dark={isHome} openCart={openCart} count={totalQuantity || 0} />
   );
 }
 
@@ -393,6 +393,8 @@ function Badge({
   return isHydrated ? (
     <button
       onClick={openCart}
+      aria-label={`Open cart, ${count || 0} items`}
+      aria-haspopup="dialog"
       className="relative flex items-center justify-center w-8 h-8 focus:ring-primary/5"
     >
       {BadgeCounter}
@@ -400,6 +402,7 @@ function Badge({
   ) : (
     <Link
       to="/cart"
+      aria-label={`Cart, ${count || 0} items`}
       className="relative flex items-center justify-center w-8 h-8 focus:ring-primary/5"
     >
       {BadgeCounter}

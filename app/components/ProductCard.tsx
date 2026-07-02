@@ -1,8 +1,10 @@
 import clsx from 'clsx';
-import {flattenConnection, Image, Money, useMoney} from '@shopify/hydrogen';
+import {flattenConnection} from '~/lib/flatten-connection';
+import {Image} from '~/components/Image';
+import {Money, useMoney} from '~/components/Money';
 import type {MoneyV2, Product} from '@shopify/hydrogen/storefront-api-types';
 
-import type {ProductCardFragment} from 'storefrontapi.generated';
+import type {ProductCardFragment} from '~/data/fragments';
 import {Text} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {Button} from '~/components/Button';

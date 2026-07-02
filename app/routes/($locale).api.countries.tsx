@@ -1,10 +1,10 @@
-import {json} from '@shopify/remix-oxygen';
+import {data} from 'react-router';
 
 import {CACHE_LONG} from '~/data/cache';
 import {countries} from '~/data/countries';
 
 export async function loader() {
-  return json(
+  return data(
     {
       ...countries,
     },

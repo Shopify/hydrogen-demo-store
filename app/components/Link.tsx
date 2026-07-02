@@ -4,7 +4,7 @@ import {
   type NavLinkProps as RemixNavLinkProps,
   type LinkProps as RemixLinkProps,
   useRouteLoaderData,
-} from '@remix-run/react';
+} from 'react-router';
 
 import type {RootLoader} from '~/root';
 

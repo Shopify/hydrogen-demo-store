@@ -1,24 +1,26 @@
-import {json, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {type LoaderFunctionArgs} from 'react-router';
+import {gql} from '@shopify/hydrogen';
+import type {RequestScopedPrivateStorefrontClient} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
 import {
   PRODUCT_CARD_FRAGMENT,
   FEATURED_COLLECTION_FRAGMENT,
 } from '~/data/fragments';
+import {storefrontContext} from '~/storefront.context';
 
-export async function loader({context: {storefront}}: LoaderFunctionArgs) {
-  return json(await getFeaturedData(storefront));
+export async function loader({context}: LoaderFunctionArgs) {
+  const client = context.get(storefrontContext);
+  return await getFeaturedData(client);
 }
 
 export async function getFeaturedData(
-  storefront: LoaderFunctionArgs['context']['storefront'],
+  client: RequestScopedPrivateStorefrontClient,
   variables: {pageBy?: number} = {},
 ) {
-  const data = await storefront.query(FEATURED_ITEMS_QUERY, {
+  const {data} = await client.graphql(FEATURED_ITEMS_QUERY, {
     variables: {
       pageBy: 12,
-      country: storefront.i18n.country,
-      language: storefront.i18n.language,
       ...variables,
     },
   });
@@ -30,7 +32,8 @@ export async function getFeaturedData(
 
 export type FeaturedData = Awaited<ReturnType<typeof getFeaturedData>>;
 
-export const FEATURED_ITEMS_QUERY = `#graphql
+export const FEATURED_ITEMS_QUERY = gql(
+  `
   query FeaturedItems(
     $country: CountryCode
     $language: LanguageCode
@@ -47,7 +50,6 @@ export const FEATURED_ITEMS_QUERY = `#graphql
       }
     }
   }
-
-  ${PRODUCT_CARD_FRAGMENT}
-  ${FEATURED_COLLECTION_FRAGMENT}
-` as const;
+`,
+  [PRODUCT_CARD_FRAGMENT, FEATURED_COLLECTION_FRAGMENT],
+);

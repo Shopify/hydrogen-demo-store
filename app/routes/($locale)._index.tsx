@@ -1,25 +1,27 @@
-import {
-  defer,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
+import {type MetaArgs, type LoaderFunctionArgs} from 'react-router';
 import {Suspense} from 'react';
-import {Await, useLoaderData} from '@remix-run/react';
-import {getSeoMeta} from '@shopify/hydrogen';
+import {Await, useLoaderData} from 'react-router';
+import {gql} from '@shopify/hydrogen';
 
 import {Hero} from '~/components/Hero';
 import {FeaturedCollections} from '~/components/FeaturedCollections';
 import {ProductSwimlane} from '~/components/ProductSwimlane';
-import {MEDIA_FRAGMENT, PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
+import {
+  COLLECTION_CONTENT_FRAGMENT,
+  PRODUCT_CARD_FRAGMENT,
+} from '~/data/fragments';
 import {getHeroPlaceholder} from '~/lib/placeholders';
 import {seoPayload} from '~/lib/seo.server';
+import {generateSeoMeta} from '~/lib/seo';
 import {routeHeaders} from '~/data/cache';
+import {getLocaleFromRequest} from '~/lib/utils';
+import {storefrontContext} from '~/storefront.context';
 
 export const headers = routeHeaders;
 
 export async function loader(args: LoaderFunctionArgs) {
-  const {params, context} = args;
-  const {language, country} = context.storefront.i18n;
+  const {params, request} = args;
+  const {language, country} = getLocaleFromRequest(request);
 
   if (
     params.locale &&
@@ -36,7 +38,7 @@ export async function loader(args: LoaderFunctionArgs) {
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  return defer({...deferredData, ...criticalData});
+  return {...deferredData, ...criticalData};
 }
 
 /**
@@ -44,16 +46,14 @@ export async function loader(args: LoaderFunctionArgs) {
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
 async function loadCriticalData({context, request}: LoaderFunctionArgs) {
-  const [{shop, hero}] = await Promise.all([
-    context.storefront.query(HOMEPAGE_SEO_QUERY, {
-      variables: {handle: 'freestyle'},
-    }),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
+  const client = context.get(storefrontContext);
+  const {data} = await client.graphql(HOMEPAGE_SEO_QUERY, {
+    variables: {handle: 'freestyle'},
+  });
 
   return {
-    shop,
-    primaryHero: hero,
+    shop: data?.shop,
+    primaryHero: data?.hero,
     seo: seoPayload.home({url: request.url}),
   };
 }
@@ -64,20 +64,11 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
  * Make sure to not throw any errors here, as it will cause the page to 500.
  */
 function loadDeferredData({context}: LoaderFunctionArgs) {
-  const {language, country} = context.storefront.i18n;
+  const client = context.get(storefrontContext);
 
-  const featuredProducts = context.storefront
-    .query(HOMEPAGE_FEATURED_PRODUCTS_QUERY, {
-      variables: {
-        /**
-         * Country and language properties are automatically injected
-         * into all queries. Passing them is unnecessary unless you
-         * want to override them from the following default:
-         */
-        country,
-        language,
-      },
-    })
+  const featuredProducts = client
+    .graphql(HOMEPAGE_FEATURED_PRODUCTS_QUERY)
+    .then((response) => response.data)
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
       // eslint-disable-next-line no-console
@@ -85,14 +76,11 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
       return null;
     });
 
-  const secondaryHero = context.storefront
-    .query(COLLECTION_HERO_QUERY, {
-      variables: {
-        handle: 'backcountry',
-        country,
-        language,
-      },
+  const secondaryHero = client
+    .graphql(COLLECTION_HERO_QUERY, {
+      variables: {handle: 'backcountry'},
     })
+    .then((response) => response.data)
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
       // eslint-disable-next-line no-console
@@ -100,13 +88,9 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
       return null;
     });
 
-  const featuredCollections = context.storefront
-    .query(FEATURED_COLLECTIONS_QUERY, {
-      variables: {
-        country,
-        language,
-      },
-    })
+  const featuredCollections = client
+    .graphql(FEATURED_COLLECTIONS_QUERY)
+    .then((response) => response.data)
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
       // eslint-disable-next-line no-console
@@ -114,14 +98,11 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
       return null;
     });
 
-  const tertiaryHero = context.storefront
-    .query(COLLECTION_HERO_QUERY, {
-      variables: {
-        handle: 'winter-2022',
-        country,
-        language,
-      },
+  const tertiaryHero = client
+    .graphql(COLLECTION_HERO_QUERY, {
+      variables: {handle: 'winter-2022'},
     })
+    .then((response) => response.data)
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
       // eslint-disable-next-line no-console
@@ -138,7 +119,7 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
 }
 
 export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+  return generateSeoMeta(...matches.map((match) => (match.data as any)?.seo));
 };
 
 export default function Homepage() {
@@ -233,36 +214,8 @@ export default function Homepage() {
   );
 }
 
-const COLLECTION_CONTENT_FRAGMENT = `#graphql
-  fragment CollectionContent on Collection {
-    id
-    handle
-    title
-    descriptionHtml
-    heading: metafield(namespace: "hero", key: "title") {
-      value
-    }
-    byline: metafield(namespace: "hero", key: "byline") {
-      value
-    }
-    cta: metafield(namespace: "hero", key: "cta") {
-      value
-    }
-    spread: metafield(namespace: "hero", key: "spread") {
-      reference {
-        ...Media
-      }
-    }
-    spreadSecondary: metafield(namespace: "hero", key: "spread_secondary") {
-      reference {
-        ...Media
-      }
-    }
-  }
-  ${MEDIA_FRAGMENT}
-` as const;
-
-const HOMEPAGE_SEO_QUERY = `#graphql
+const HOMEPAGE_SEO_QUERY = gql(
+  `
   query seoCollectionContent($handle: String, $country: CountryCode, $language: LanguageCode)
   @inContext(country: $country, language: $language) {
     hero: collection(handle: $handle) {
@@ -273,21 +226,25 @@ const HOMEPAGE_SEO_QUERY = `#graphql
       description
     }
   }
-  ${COLLECTION_CONTENT_FRAGMENT}
-` as const;
+`,
+  [COLLECTION_CONTENT_FRAGMENT],
+);
 
-const COLLECTION_HERO_QUERY = `#graphql
+const COLLECTION_HERO_QUERY = gql(
+  `
   query heroCollectionContent($handle: String, $country: CountryCode, $language: LanguageCode)
   @inContext(country: $country, language: $language) {
     hero: collection(handle: $handle) {
       ...CollectionContent
     }
   }
-  ${COLLECTION_CONTENT_FRAGMENT}
-` as const;
+`,
+  [COLLECTION_CONTENT_FRAGMENT],
+);
 
 // @see: https://shopify.dev/api/storefront/current/queries/products
-export const HOMEPAGE_FEATURED_PRODUCTS_QUERY = `#graphql
+export const HOMEPAGE_FEATURED_PRODUCTS_QUERY = gql(
+  `
   query homepageFeaturedProducts($country: CountryCode, $language: LanguageCode)
   @inContext(country: $country, language: $language) {
     products(first: 8) {
@@ -296,11 +253,12 @@ export const HOMEPAGE_FEATURED_PRODUCTS_QUERY = `#graphql
       }
     }
   }
-  ${PRODUCT_CARD_FRAGMENT}
-` as const;
+`,
+  [PRODUCT_CARD_FRAGMENT],
+);
 
 // @see: https://shopify.dev/api/storefront/current/queries/collections
-export const FEATURED_COLLECTIONS_QUERY = `#graphql
+export const FEATURED_COLLECTIONS_QUERY = gql(`
   query homepageFeaturedCollections($country: CountryCode, $language: LanguageCode)
   @inContext(country: $country, language: $language) {
     collections(
@@ -320,4 +278,4 @@ export const FEATURED_COLLECTIONS_QUERY = `#graphql
       }
     }
   }
-` as const;
+`);

@@ -1,4 +1,4 @@
-import type {Storefront as HydrogenStorefront} from '@shopify/hydrogen';
+import type {RequestScopedPrivateStorefrontClient} from '@shopify/hydrogen';
 import type {
   CountryCode,
   CurrencyCode,
@@ -22,4 +22,4 @@ export type I18nLocale = Locale & {
   pathPrefix: string;
 };
 
-export type Storefront = HydrogenStorefront<I18nLocale>;
+export type Storefront = RequestScopedPrivateStorefrontClient;

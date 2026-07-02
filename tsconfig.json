@@ -1,5 +1,10 @@
 {
-  "include": ["./**/*.d.ts", "./**/*.ts", "./**/*.tsx"],
+  "include": [
+    "./**/*.d.ts",
+    "./**/*.ts",
+    "./**/*.tsx",
+    ".react-router/types/**/*"
+  ],
   "exclude": ["node_modules", "dist", "playwright.config.ts"],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
@@ -15,10 +20,33 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "baseUrl": ".",
-    "types": ["@shopify/oxygen-workers-types"],
+    "types": [
+      "@shopify/oxygen-workers-types",
+      "react-router",
+      "vite/client"
+    ],
+    "plugins": [
+      {
+        "name": "gql.tada/ts-plugin",
+        "schemas": [
+          {
+            "name": "storefront",
+            "schema": "node_modules/@shopify/hydrogen/dist/storefront.schema.json",
+            "tadaOutputLocation": "./app/storefront-graphql-env.d.ts"
+          },
+          {
+            "name": "customer-account",
+            "schema": "node_modules/@shopify/hydrogen/dist/customer-account.schema.json",
+            "tadaOutputLocation": "./app/customer-account-graphql-env.d.ts"
+          }
+        ],
+        "trackFieldUsage": false
+      }
+    ],
     "paths": {
       "~/*": ["app/*"]
     },
-    "noEmit": true
+    "noEmit": true,
+    "rootDirs": [".", "./.react-router/types"]
   }
 }

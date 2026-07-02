@@ -1,10 +1,8 @@
 import {
-  defer,
   type LinksFunction,
   type LoaderFunctionArgs,
-  type AppLoadContext,
   type MetaArgs,
-} from '@shopify/remix-oxygen';
+} from 'react-router';
 import {
   isRouteErrorResponse,
   Links,
@@ -15,26 +13,33 @@ import {
   useRouteLoaderData,
   useRouteError,
   type ShouldRevalidateFunction,
-} from '@remix-run/react';
-import {
-  useNonce,
-  Analytics,
-  getShopAnalytics,
-  getSeoMeta,
-  type SeoConfig,
-} from '@shopify/hydrogen';
+} from 'react-router';
+import {gql, type RequestScopedPrivateStorefrontClient} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
 import {PageLayout} from '~/components/PageLayout';
 import {GenericError} from '~/components/GenericError';
 import {NotFound} from '~/components/NotFound';
+import {AnalyticsTracker} from '~/components/AnalyticsTracker';
 import favicon from '~/assets/favicon.svg';
 import {seoPayload} from '~/lib/seo.server';
+import {generateSeoMeta} from '~/lib/seo';
+import {useNonce} from '~/lib/nonce';
+import {CartProvider} from '~/lib/cart';
 import styles from '~/styles/app.css?url';
 
-import {DEFAULT_LOCALE, parseMenu} from './lib/utils';
+import {DEFAULT_LOCALE, getLocaleFromRequest, parseMenu} from './lib/utils';
+import type {Route} from './+types/root';
+import {storefrontMiddleware} from '~/storefront.middleware';
+import {
+  customerAccountContext,
+  oxygenContext,
+  storefrontContext,
+} from '~/storefront.context';
 
 export type RootLoader = typeof loader;
+
+export const middleware: Route.MiddlewareFunction[] = [storefrontMiddleware];
 
 // This is important to avoid re-fetching root queries on sub-navigations
 export const shouldRevalidate: ShouldRevalidateFunction = ({
@@ -85,10 +90,10 @@ export async function loader(args: LoaderFunctionArgs) {
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  return defer({
+  return {
     ...deferredData,
     ...criticalData,
-  });
+  };
 }
 
 /**
@@ -96,28 +101,35 @@ export async function loader(args: LoaderFunctionArgs) {
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
 async function loadCriticalData({request, context}: LoaderFunctionArgs) {
+  const storefrontClient = context.get(storefrontContext);
+  const {env} = context.get(oxygenContext);
+
   const [layout] = await Promise.all([
-    getLayoutData(context),
+    getLayoutData(storefrontClient, env),
     // Add other queries here, so that they are loaded in parallel
   ]);
 
   const seo = seoPayload.root({shop: layout.shop, url: request.url});
 
-  const {storefront, env} = context;
+  const selectedLocale = getLocaleFromRequest(request);
 
   return {
     layout,
     seo,
-    shop: getShopAnalytics({
-      storefront,
-      publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
-    }),
-    consent: {
-      checkoutDomain: env.PUBLIC_CHECKOUT_DOMAIN,
-      storefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
-      withPrivacyBanner: true,
+    shop: {
+      shopId: layout.shop.id,
+      acceptedLanguage: selectedLocale.language,
+      currency: selectedLocale.currency,
+      hydrogenSubchannelId: env.PUBLIC_STOREFRONT_ID ?? '0',
     },
-    selectedLocale: storefront.i18n,
+    consent: {
+      consentDomain: env.PUBLIC_CHECKOUT_DOMAIN,
+      publicStorefrontAccessToken: env.PUBLIC_STOREFRONT_API_TOKEN,
+      mode: 'default-banner' as const,
+      country: selectedLocale.country,
+      language: selectedLocale.language,
+    },
+    selectedLocale,
   };
 }
 
@@ -127,16 +139,15 @@ async function loadCriticalData({request, context}: LoaderFunctionArgs) {
  * Make sure to not throw any errors here, as it will cause the page to 500.
  */
 function loadDeferredData({context}: LoaderFunctionArgs) {
-  const {cart, customerAccount} = context;
+  const customerAccount = context.get(customerAccountContext);
 
   return {
     isLoggedIn: customerAccount.isLoggedIn(),
-    cart: cart.get(),
   };
 }
 
 export const meta = ({data}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(data!.seo as SeoConfig);
+  return generateSeoMeta(data!.seo);
 };
 
 function Layout({children}: {children?: React.ReactNode}) {
@@ -151,23 +162,25 @@ function Layout({children}: {children?: React.ReactNode}) {
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="msvalidate.01" content="A352E6A0AF9A652267361BBB572B8468" />
         <link rel="stylesheet" href={styles}></link>
+        <script
+          type="module"
+          src="https://cdn.shopify.com/storefront/standard-actions.js"
+          crossOrigin="anonymous"
+        ></script>
         <Meta />
         <Links />
       </head>
       <body>
         {data ? (
-          <Analytics.Provider
-            cart={data.cart}
-            shop={data.shop}
-            consent={data.consent}
-          >
+          <CartProvider>
+            <AnalyticsTracker shop={data.shop} consent={data.consent} />
             <PageLayout
               key={`${locale.language}-${locale.country}`}
               layout={data.layout}
             >
               {children}
             </PageLayout>
-          </Analytics.Provider>
+          </CartProvider>
         ) : (
           children
         )}
@@ -217,7 +230,7 @@ export function ErrorBoundary({error}: {error: Error}) {
   );
 }
 
-const LAYOUT_QUERY = `#graphql
+const LAYOUT_QUERY = gql(`#graphql
   query layout(
     $language: LanguageCode
     $headerMenuHandle: String!
@@ -271,14 +284,16 @@ const LAYOUT_QUERY = `#graphql
       ...ParentMenuItem
     }
   }
-` as const;
+`);
 
-async function getLayoutData({storefront, env}: AppLoadContext) {
-  const data = await storefront.query(LAYOUT_QUERY, {
+async function getLayoutData(
+  client: RequestScopedPrivateStorefrontClient,
+  env: Env,
+) {
+  const {data} = await client.graphql(LAYOUT_QUERY, {
     variables: {
       headerMenuHandle: 'main-menu',
       footerMenuHandle: 'footer',
-      language: storefront.i18n.language,
     },
   });
 

@@ -1,4 +1,7 @@
-import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {redirect, type LoaderFunctionArgs} from 'react-router';
+import {cartQueries, createCartCookie} from '@shopify/hydrogen';
+
+import {storefrontContext} from '~/storefront.context';
 
 /**
  * Automatically creates a new cart based on the URL and redirects straight to checkout.
@@ -20,9 +23,9 @@ import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
  * @preserve
  */
 export async function loader({request, context, params}: LoaderFunctionArgs) {
-  const {cart} = context;
+  const client = context.get(storefrontContext);
   const {lines} = params;
-  const linesMap = lines?.split(',').map((line) => {
+  const linesMap = (lines?.split(',') ?? []).map((line) => {
     const lineDetails = line.split(':');
     const variantId = lineDetails[0];
     const quantity = parseInt(lineDetails[1], 10);
@@ -39,24 +42,27 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
   const discount = searchParams.get('discount');
   const discountArray = discount ? [discount] : [];
 
-  //! create a cart
-  const result = await cart.create({
-    lines: linesMap,
-    discountCodes: discountArray,
+  const {data} = await client.graphql(cartQueries.cartCreate, {
+    variables: {
+      input: {
+        lines: linesMap,
+        discountCodes: discountArray,
+      },
+    },
   });
 
-  const cartResult = result.cart;
+  const cartResult = (data as any)?.cartCreate?.cart;
+  const userErrors = (data as any)?.cartCreate?.userErrors;
 
-  if (result.errors?.length || !cartResult) {
+  if (userErrors?.length || !cartResult) {
     throw new Response('Link may be expired. Try checking the URL.', {
       status: 410,
     });
   }
 
-  // Update cart id in cookie
-  const headers = cart.setCartId(cartResult.id);
+  const headers = new Headers();
+  headers.append('Set-Cookie', createCartCookie(cartResult.id));
 
-  //! redirect to checkout
   if (cartResult.checkoutUrl) {
     return redirect(cartResult.checkoutUrl, {headers});
   } else {

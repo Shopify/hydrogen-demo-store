@@ -1,5 +1,7 @@
-import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import type {LoaderFunctionArgs} from 'react-router';
+
+import {customerAccountContext} from '~/storefront.context';
 
 export async function loader({context, params}: LoaderFunctionArgs) {
-  return context.customerAccount.authorize();
+  return context.get(customerAccountContext).authorize();
 }

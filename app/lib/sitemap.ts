@@ -1,4 +1,6 @@
-import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import type {LoaderFunctionArgs} from 'react-router';
+import {gql} from '@shopify/hydrogen';
+import type {RequestScopedPrivateStorefrontClient} from '@shopify/hydrogen';
 import type {
   CountryCode,
   LanguageCode,
@@ -31,14 +33,12 @@ export async function getSitemapIndex({
   types = ['products', 'pages', 'collections', 'metaObjects', 'articles'],
   customUrls = [],
 }: {
-  storefront: LoaderFunctionArgs['context']['storefront'];
+  storefront: RequestScopedPrivateStorefrontClient;
   request: Request;
   types?: SITEMAP_INDEX_TYPE[];
   customUrls?: string[];
 }) {
-  const data = await storefront.query(SITEMAP_INDEX_QUERY, {
-    storefrontApiVersion: 'unstable',
-  });
+  const {data} = await storefront.graphql(SITEMAP_INDEX_QUERY);
 
   if (!data) {
     throw new Response('No data found', {status: 404});
@@ -50,7 +50,7 @@ export async function getSitemapIndex({
     SITEMAP_INDEX_PREFIX +
     types
       .map((type) =>
-        getSiteMapLinks(type, data[type].pagesCount.count, baseUrl),
+        getSiteMapLinks(type, (data as any)[type].pagesCount.count, baseUrl),
       )
       .join('\n') +
     customUrls
@@ -70,7 +70,7 @@ interface GetSiteMapOptions {
   /** The params object from Remix */
   params: LoaderFunctionArgs['params'];
   /** The Storefront API Client from Hydrogen */
-  storefront: LoaderFunctionArgs['context']['storefront'];
+  storefront: RequestScopedPrivateStorefrontClient;
   /** A Remix Request object */
   request: Request;
   /** A function that produces a canonical url for a resource. It is called multiple times for each locale supported by the app. */
@@ -104,14 +104,15 @@ export async function getSitemap(options: GetSiteMapOptions) {
 
   if (!query) throw new Response('Not found', {status: 404});
 
-  const data = await storefront.query(query, {
+  const {data} = await storefront.graphql(query, {
     variables: {
       page: parseInt(params.page, 10),
     },
-    storefrontApiVersion: 'unstable',
   });
 
-  if (!data?.sitemap?.resources?.items?.length) {
+  const sitemap = (data as any)?.sitemap;
+
+  if (!sitemap?.resources?.items?.length) {
     throw new Response('Not found', {status: 404});
   }
 
@@ -119,7 +120,7 @@ export async function getSitemap(options: GetSiteMapOptions) {
 
   const body =
     SITEMAP_PREFIX +
-    data.sitemap.resources.items
+    sitemap.resources.items
       .map((item: {handle: string; updatedAt: string; type?: string}) => {
         return renderUrlTag({
           getChangeFreq: options.getChangeFreq,
@@ -207,7 +208,7 @@ function renderAlternateTag(url: string, locale: string) {
   return `  <xhtml:link rel="alternate" hreflang="${locale}" href="${url}" />`;
 }
 
-const PRODUCT_SITEMAP_QUERY = `#graphql
+const PRODUCT_SITEMAP_QUERY = gql(`#graphql
     query SitemapProducts($page: Int!) {
       sitemap(type: PRODUCT) {
         resources(page: $page) {
@@ -218,9 +219,9 @@ const PRODUCT_SITEMAP_QUERY = `#graphql
         }
       }
     }
-` as const;
+`);
 
-const COLLECTION_SITEMAP_QUERY = `#graphql
+const COLLECTION_SITEMAP_QUERY = gql(`#graphql
     query SitemapCollections($page: Int!) {
       sitemap(type: COLLECTION) {
         resources(page: $page) {
@@ -231,9 +232,9 @@ const COLLECTION_SITEMAP_QUERY = `#graphql
         }
       }
     }
-` as const;
+`);
 
-const ARTICLE_SITEMAP_QUERY = `#graphql
+const ARTICLE_SITEMAP_QUERY = gql(`#graphql
     query SitemapArticles($page: Int!) {
       sitemap(type: ARTICLE) {
         resources(page: $page) {
@@ -244,9 +245,9 @@ const ARTICLE_SITEMAP_QUERY = `#graphql
         }
       }
     }
-` as const;
+`);
 
-const PAGE_SITEMAP_QUERY = `#graphql
+const PAGE_SITEMAP_QUERY = gql(`#graphql
     query SitemapPages($page: Int!) {
       sitemap(type: PAGE) {
         resources(page: $page) {
@@ -257,9 +258,9 @@ const PAGE_SITEMAP_QUERY = `#graphql
         }
       }
     }
-` as const;
+`);
 
-const BLOG_SITEMAP_QUERY = `#graphql
+const BLOG_SITEMAP_QUERY = gql(`#graphql
     query SitemapBlogs($page: Int!) {
       sitemap(type: BLOG) {
         resources(page: $page) {
@@ -270,11 +271,11 @@ const BLOG_SITEMAP_QUERY = `#graphql
         }
       }
     }
-` as const;
+`);
 
-const METAOBJECT_SITEMAP_QUERY = `#graphql
+const METAOBJECT_SITEMAP_QUERY = gql(`#graphql
     query SitemapMetaobjects($page: Int!) {
-      sitemap(type: METAOBJECT_PAGE) {
+      sitemap(type: METAOBJECT) {
         resources(page: $page) {
           items {
             handle
@@ -286,9 +287,9 @@ const METAOBJECT_SITEMAP_QUERY = `#graphql
         }
       }
     }
-` as const;
+`);
 
-const SITEMAP_INDEX_QUERY = `#graphql
+const SITEMAP_INDEX_QUERY = gql(`#graphql
 query SitemapIndex {
   products: sitemap(type: PRODUCT) {
     pagesCount {
@@ -315,13 +316,13 @@ query SitemapIndex {
       count
     }
   }
-  metaObjects: sitemap(type: METAOBJECT_PAGE) {
+  metaObjects: sitemap(type: METAOBJECT) {
     pagesCount {
       count
     }
   }
 }
-` as const;
+`);
 
 const QUERIES = {
   products: PRODUCT_SITEMAP_QUERY,

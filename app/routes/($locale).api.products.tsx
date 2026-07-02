@@ -1,9 +1,11 @@
-import {json, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {type LoaderFunctionArgs} from 'react-router';
 import type {ProductSortKeys} from '@shopify/hydrogen/storefront-api-types';
-import {flattenConnection} from '@shopify/hydrogen';
+import {gql} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
+import {flattenConnection} from '~/lib/flatten-connection';
 import {PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
+import {storefrontContext} from '~/storefront.context';
 
 /**
  * Fetch a given set of products from the storefront API
@@ -14,10 +16,8 @@ import {PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
  * @returns Product[]
  * @see https://shopify.dev/api/storefront/current/queries/products
  */
-export async function loader({
-  request,
-  context: {storefront},
-}: LoaderFunctionArgs) {
+export async function loader({request, context}: LoaderFunctionArgs) {
+  const client = context.get(storefrontContext);
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
 
@@ -45,26 +45,25 @@ export async function loader({
     // noop
   }
 
-  const {products} = await storefront.query(API_ALL_PRODUCTS_QUERY, {
+  const {data} = await client.graphql(API_ALL_PRODUCTS_QUERY, {
     variables: {
       count,
       query,
       reverse,
       sortKey,
-      country: storefront.i18n.country,
-      language: storefront.i18n.language,
     },
-    cache: storefront.CacheLong(),
   });
+  const products = data?.products;
 
   invariant(products, 'No data returned from top products query');
 
-  return json({
+  return {
     products: flattenConnection(products),
-  });
+  };
 }
 
-const API_ALL_PRODUCTS_QUERY = `#graphql
+const API_ALL_PRODUCTS_QUERY = gql(
+  `
   query ApiAllProducts(
     $query: String
     $count: Int
@@ -79,8 +78,9 @@ const API_ALL_PRODUCTS_QUERY = `#graphql
       }
     }
   }
-  ${PRODUCT_CARD_FRAGMENT}
-` as const;
+`,
+  [PRODUCT_CARD_FRAGMENT],
+);
 
 // no-op
 export default function ProductsApiRoute() {

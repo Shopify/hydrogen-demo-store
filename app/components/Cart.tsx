@@ -1,22 +1,10 @@
 import clsx from 'clsx';
 import {useRef} from 'react';
 import useScroll from 'react-use/esm/useScroll';
-import {
-  flattenConnection,
-  CartForm,
-  Image,
-  Money,
-  useOptimisticData,
-  OptimisticInput,
-  type CartReturn,
-} from '@shopify/hydrogen';
-import type {
-  Cart as CartType,
-  CartCost,
-  CartLine,
-  CartLineUpdateInput,
-} from '@shopify/hydrogen/storefront-api-types';
 
+import {useCart, useCartForm, type CartLineNode} from '~/lib/cart';
+import {Image} from '~/components/Image';
+import {Money} from '~/components/Money';
 import {Button} from '~/components/Button';
 import {Text, Heading} from '~/components/Text';
 import {Link} from '~/components/Link';
@@ -29,31 +17,24 @@ type Layouts = 'page' | 'drawer';
 export function Cart({
   layout,
   onClose,
-  cart,
 }: {
   layout: Layouts;
   onClose?: () => void;
-  cart: CartReturn | null;
 }) {
-  const linesCount = Boolean(cart?.lines?.edges?.length || 0);
+  const totalQuantity = useCart((state) => state.data.totalQuantity);
+  const linesCount = Boolean(totalQuantity && totalQuantity > 0);
 
   return (
     <>
       <CartEmpty hidden={linesCount} onClose={onClose} layout={layout} />
-      <CartDetails cart={cart} layout={layout} />
+      <CartDetails layout={layout} />
     </>
   );
 }
 
-export function CartDetails({
-  layout,
-  cart,
-}: {
-  layout: Layouts;
-  cart: CartType | null;
-}) {
-  // @todo: get optimistic cart cost
-  const cartHasItems = !!cart && cart.totalQuantity > 0;
+export function CartDetails({layout}: {layout: Layouts}) {
+  const totalQuantity = useCart((state) => state.data.totalQuantity);
+  const cartHasItems = Boolean(totalQuantity && totalQuantity > 0);
   const container = {
     drawer: 'grid grid-cols-1 h-screen-no-nav grid-rows-[1fr_auto]',
     page: 'w-full pb-12 grid md:grid-cols-2 md:items-start gap-8 md:gap-8 lg:gap-12',
@@ -61,27 +42,19 @@ export function CartDetails({
 
   return (
     <div className={container[layout]}>
-      <CartLines lines={cart?.lines} layout={layout} />
+      <CartLines layout={layout} />
       {cartHasItems && (
-        <CartSummary cost={cart.cost} layout={layout}>
-          <CartDiscounts discountCodes={cart.discountCodes} />
-          <CartCheckoutActions checkoutUrl={cart.checkoutUrl} />
+        <CartSummary layout={layout}>
+          <CartDiscounts />
+          <CartCheckoutActions />
         </CartSummary>
       )}
     </div>
   );
 }
 
-/**
- * Temporary discount UI
- * @param discountCodes the current discount codes applied to the cart
- * @todo rework when a design is ready
- */
-function CartDiscounts({
-  discountCodes,
-}: {
-  discountCodes: CartType['discountCodes'];
-}) {
+function CartDiscounts() {
+  const discountCodes = useCart((state) => state.data.discountCodes);
   const codes: string[] =
     discountCodes
       ?.filter((discount) => discount.applicable)
@@ -89,75 +62,67 @@ function CartDiscounts({
 
   return (
     <>
-      {/* Have existing discount, display it with a remove option */}
       <dl className={codes && codes.length !== 0 ? 'grid' : 'hidden'}>
         <div className="flex items-center justify-between font-medium">
           <Text as="dt">Discount(s)</Text>
           <div className="flex items-center justify-between">
-            <UpdateDiscountForm>
-              <button>
-                <IconRemove
-                  aria-hidden="true"
-                  style={{height: 18, marginRight: 4}}
-                />
-              </button>
-            </UpdateDiscountForm>
+            {codes.map((code) => (
+              <RemoveDiscountForm key={code} code={code} />
+            ))}
             <Text as="dd">{codes?.join(', ')}</Text>
           </div>
         </div>
       </dl>
 
-      {/* Show an input to apply a discount */}
-      <UpdateDiscountForm discountCodes={codes}>
-        <div
-          className={clsx(
-            'flex',
-            'items-center gap-4 justify-between text-copy',
-          )}
-        >
-          <input
-            className={getInputStyleClasses()}
-            type="text"
-            name="discountCode"
-            placeholder="Discount code"
-          />
-          <button className="flex justify-end font-medium whitespace-nowrap">
-            Apply Discount
-          </button>
-        </div>
-      </UpdateDiscountForm>
+      <ApplyDiscountForm />
     </>
   );
 }
 
-function UpdateDiscountForm({
-  discountCodes,
-  children,
-}: {
-  discountCodes?: string[];
-  children: React.ReactNode;
-}) {
+function ApplyDiscountForm() {
+  const {formProps, register} = useCartForm();
+  const pendingDiscounts = useCart((state) => state.pending.discountCodes);
+  const isPending = pendingDiscounts.size > 0;
+
   return (
-    <CartForm
-      route="/cart"
-      action={CartForm.ACTIONS.DiscountCodesUpdate}
-      inputs={{
-        discountCodes: discountCodes || [],
-      }}
-    >
-      {children}
-    </CartForm>
+    <form {...formProps()}>
+      <button type="submit" hidden {...register('discount-apply')} />
+      <div
+        className={clsx('flex', 'items-center gap-4 justify-between text-copy')}
+      >
+        <input
+          className={getInputStyleClasses()}
+          type="text"
+          placeholder="Discount code"
+          {...register('discountCode', {defaultValue: ''})}
+        />
+        <button
+          type="submit"
+          {...register('discount-apply')}
+          className="flex justify-end font-medium whitespace-nowrap"
+        >
+          {isPending ? 'Applying…' : 'Apply Discount'}
+        </button>
+      </div>
+    </form>
   );
 }
 
-function CartLines({
-  layout = 'drawer',
-  lines: cartLines,
-}: {
-  layout: Layouts;
-  lines: CartType['lines'] | undefined;
-}) {
-  const currentLines = cartLines ? flattenConnection(cartLines) : [];
+function RemoveDiscountForm({code}: {code: string}) {
+  const {formProps, register} = useCartForm();
+
+  return (
+    <form {...formProps()}>
+      <input type="hidden" {...register('discountCode', {value: code})} />
+      <button type="submit" {...register('discount-remove')}>
+        <IconRemove aria-hidden="true" style={{height: 18, marginRight: 4}} />
+      </button>
+    </form>
+  );
+}
+
+function CartLines({layout = 'drawer'}: {layout: Layouts}) {
+  const currentLines = useCart((state) => state.data.lines.nodes);
   const scrollRef = useRef(null);
   const {y} = useScroll(scrollRef);
 
@@ -176,14 +141,15 @@ function CartLines({
     >
       <ul className="grid gap-6 md:gap-10">
         {currentLines.map((line) => (
-          <CartLineItem key={line.id} line={line as CartLine} />
+          <CartLineItem key={line.id} line={line} />
         ))}
       </ul>
     </section>
   );
 }
 
-function CartCheckoutActions({checkoutUrl}: {checkoutUrl: string}) {
+function CartCheckoutActions() {
+  const checkoutUrl = useCart((state) => state.data.checkoutUrl);
   if (!checkoutUrl) return null;
 
   return (
@@ -193,20 +159,18 @@ function CartCheckoutActions({checkoutUrl}: {checkoutUrl: string}) {
           Continue to Checkout
         </Button>
       </a>
-      {/* @todo: <CartShopPayButton cart={cart} /> */}
     </div>
   );
 }
 
 function CartSummary({
-  cost,
   layout,
   children = null,
 }: {
   children?: React.ReactNode;
-  cost: CartCost;
   layout: Layouts;
 }) {
+  const cost = useCart((state) => state.data.cost);
   const summary = {
     drawer: 'grid gap-4 p-6 border-t md:px-12',
     page: 'sticky top-nav grid gap-6 p-4 md:px-6 md:translate-y-4 bg-primary/5 rounded w-full',
@@ -222,7 +186,7 @@ function CartSummary({
           <Text as="dt">Subtotal</Text>
           <Text as="dd" data-test="subtotal">
             {cost?.subtotalAmount?.amount ? (
-              <Money data={cost?.subtotalAmount} />
+              <Money data={cost.subtotalAmount} />
             ) : (
               '-'
             )}
@@ -234,13 +198,9 @@ function CartSummary({
   );
 }
 
-type OptimisticData = {
-  action?: string;
-  quantity?: number;
-};
-
-function CartLineItem({line}: {line: CartLine}) {
-  const optimisticData = useOptimisticData<OptimisticData>(line?.id);
+function CartLineItem({line}: {line: CartLineNode}) {
+  const {formProps, register} = useCartForm();
+  const pendingLines = useCart((state) => state.pending.lines);
 
   if (!line?.id) return null;
 
@@ -248,16 +208,10 @@ function CartLineItem({line}: {line: CartLine}) {
 
   if (typeof quantity === 'undefined' || !merchandise?.product) return null;
 
+  const isPending = pendingLines.has(id);
+
   return (
-    <li
-      key={id}
-      className="flex gap-4"
-      style={{
-        // Hide the line item if the optimistic data action is remove
-        // Do not remove the form from the DOM
-        display: optimisticData?.action === 'remove' ? 'none' : 'flex',
-      }}
-    >
+    <li key={id} className="flex gap-4">
       <div className="flex-shrink">
         {merchandise.image && (
           <Image
@@ -290,14 +244,46 @@ function CartLineItem({line}: {line: CartLine}) {
             ))}
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex justify-start text-copy">
-              <CartLineQuantityAdjust line={line} />
+          <form {...formProps()} className="flex items-center gap-2">
+            <button {...register('set')} />
+            <input type="hidden" {...register('lineId', {value: id})} />
+            <div className="flex items-center border rounded">
+              <button
+                type="submit"
+                {...register('decrease')}
+                aria-label="Decrease quantity"
+                className="w-10 h-10 transition text-primary/50 hover:text-primary"
+              >
+                <span>&#8722;</span>
+              </button>
+              <input
+                {...register('quantity', {value: quantity, interactive: true})}
+                aria-label="Quantity"
+                className={clsx(
+                  'px-2 w-8 text-center bg-transparent appearance-none border-0 focus:outline-none focus:ring-0',
+                  isPending ? 'opacity-30' : '',
+                )}
+              />
+              <button
+                type="submit"
+                {...register('increase')}
+                aria-label="Increase quantity"
+                className="w-10 h-10 transition text-primary/50 hover:text-primary"
+              >
+                <span>&#43;</span>
+              </button>
             </div>
-            <ItemRemoveButton lineId={id} />
-          </div>
+            <button
+              type="submit"
+              {...register('remove')}
+              className="flex items-center justify-center w-10 h-10 border rounded"
+            >
+              <span className="sr-only">Remove</span>
+              <IconRemove aria-hidden="true" />
+            </button>
+          </form>
         </div>
-        <Text>
+        <Text className={isPending ? 'opacity-30' : ''}>
           <CartLinePrice line={line} as="span" />
         </Text>
       </div>
@@ -305,123 +291,15 @@ function CartLineItem({line}: {line: CartLine}) {
   );
 }
 
-function ItemRemoveButton({lineId}: {lineId: CartLine['id']}) {
-  return (
-    <CartForm
-      route="/cart"
-      action={CartForm.ACTIONS.LinesRemove}
-      inputs={{
-        lineIds: [lineId],
-      }}
-    >
-      <button
-        className="flex items-center justify-center w-10 h-10 border rounded"
-        type="submit"
-      >
-        <span className="sr-only">Remove</span>
-        <IconRemove aria-hidden="true" />
-      </button>
-      <OptimisticInput id={lineId} data={{action: 'remove'}} />
-    </CartForm>
-  );
-}
-
-function CartLineQuantityAdjust({line}: {line: CartLine}) {
-  const optimisticId = line?.id;
-  const optimisticData = useOptimisticData<OptimisticData>(optimisticId);
-
-  if (!line || typeof line?.quantity === 'undefined') return null;
-
-  const optimisticQuantity = optimisticData?.quantity || line.quantity;
-
-  const {id: lineId} = line;
-  const prevQuantity = Number(Math.max(0, optimisticQuantity - 1).toFixed(0));
-  const nextQuantity = Number((optimisticQuantity + 1).toFixed(0));
-
-  return (
-    <>
-      <label htmlFor={`quantity-${lineId}`} className="sr-only">
-        Quantity, {optimisticQuantity}
-      </label>
-      <div className="flex items-center border rounded">
-        <UpdateCartButton lines={[{id: lineId, quantity: prevQuantity}]}>
-          <button
-            name="decrease-quantity"
-            aria-label="Decrease quantity"
-            className="w-10 h-10 transition text-primary/50 hover:text-primary disabled:text-primary/10"
-            value={prevQuantity}
-            disabled={optimisticQuantity <= 1}
-          >
-            <span>&#8722;</span>
-            <OptimisticInput
-              id={optimisticId}
-              data={{quantity: prevQuantity}}
-            />
-          </button>
-        </UpdateCartButton>
-
-        <div className="px-2 text-center" data-test="item-quantity">
-          {optimisticQuantity}
-        </div>
-
-        <UpdateCartButton lines={[{id: lineId, quantity: nextQuantity}]}>
-          <button
-            className="w-10 h-10 transition text-primary/50 hover:text-primary"
-            name="increase-quantity"
-            value={nextQuantity}
-            aria-label="Increase quantity"
-          >
-            <span>&#43;</span>
-            <OptimisticInput
-              id={optimisticId}
-              data={{quantity: nextQuantity}}
-            />
-          </button>
-        </UpdateCartButton>
-      </div>
-    </>
-  );
-}
-
-function UpdateCartButton({
-  children,
-  lines,
-}: {
-  children: React.ReactNode;
-  lines: CartLineUpdateInput[];
-}) {
-  return (
-    <CartForm
-      route="/cart"
-      action={CartForm.ACTIONS.LinesUpdate}
-      inputs={{
-        lines,
-      }}
-    >
-      {children}
-    </CartForm>
-  );
-}
-
 function CartLinePrice({
   line,
-  priceType = 'regular',
   ...passthroughProps
 }: {
-  line: CartLine;
-  priceType?: 'regular' | 'compareAt';
+  line: CartLineNode;
   [key: string]: any;
 }) {
-  if (!line?.cost?.amountPerQuantity || !line?.cost?.totalAmount) return null;
-
-  const moneyV2 =
-    priceType === 'regular'
-      ? line.cost.totalAmount
-      : line.cost.compareAtAmountPerQuantity;
-
-  if (moneyV2 == null) {
-    return null;
-  }
+  const moneyV2 = line?.cost?.totalAmount;
+  if (moneyV2 == null) return null;
 
   return <Money withoutTrailingZeros {...passthroughProps} data={moneyV2} />;
 }
