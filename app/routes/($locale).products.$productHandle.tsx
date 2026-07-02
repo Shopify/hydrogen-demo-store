@@ -264,33 +264,56 @@ export function ProductForm({product}: {product: ProductType}) {
                             .map((value) => {
                               const isDifferentProduct =
                                 value.handle !== product.handle;
+                              const closeListbox = () => {
+                                if (!closeRef?.current) return;
+                                closeRef.current.click();
+                              };
+                              const className = clsx(
+                                'text-primary w-full p-2 transition rounded flex justify-start items-center text-left cursor-pointer',
+                                value.selected && 'bg-primary/10',
+                              );
+                              const content = (
+                                <>
+                                  {value.name}
+                                  {value.selected && (
+                                    <span className="ml-2">
+                                      <IconCheck />
+                                    </span>
+                                  )}
+                                </>
+                              );
+                              const optionValueProps = register('optionValue', {
+                                optionName: option.name,
+                                value: value.name,
+                              });
                               return (
                                 <Listbox.Option
                                   key={`option-${option.name}-${value.name}`}
                                   value={value.name}
                                 >
-                                  <Link
-                                    {...(!isDifferentProduct
-                                      ? {rel: 'nofollow'}
-                                      : {})}
-                                    to={`/products/${value.handle}?${optionsSearch(value.selectedOptions)}`}
-                                    preventScrollReset
-                                    className={clsx(
-                                      'text-primary w-full p-2 transition rounded flex justify-start items-center text-left cursor-pointer',
-                                      value.selected && 'bg-primary/10',
-                                    )}
-                                    onClick={() => {
-                                      if (!closeRef?.current) return;
-                                      closeRef.current.click();
-                                    }}
-                                  >
-                                    {value.name}
-                                    {value.selected && (
-                                      <span className="ml-2">
-                                        <IconCheck />
-                                      </span>
-                                    )}
-                                  </Link>
+                                  {isDifferentProduct ? (
+                                    <Link
+                                      to={`/products/${value.handle}?${optionsSearch(value.selectedOptions)}`}
+                                      preventScrollReset
+                                      className={className}
+                                      onClick={closeListbox}
+                                    >
+                                      {content}
+                                    </Link>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      aria-pressed={value.selected}
+                                      className={className}
+                                      {...optionValueProps}
+                                      onClick={() => {
+                                        optionValueProps.onClick();
+                                        closeListbox();
+                                      }}
+                                    >
+                                      {content}
+                                    </button>
+                                  )}
                                 </Listbox.Option>
                               );
                             })}
@@ -302,27 +325,41 @@ export function ProductForm({product}: {product: ProductType}) {
               ) : (
                 option.values.map((value) => {
                   const isDifferentProduct = value.handle !== product.handle;
-                  return (
+                  const className = clsx(
+                    'leading-none py-1 border-b-[1.5px] cursor-pointer transition-all duration-200',
+                    value.selected ? 'border-primary/50' : 'border-primary/0',
+                    value.available ? 'opacity-100' : 'opacity-50',
+                  );
+                  const swatch = (
+                    <ProductOptionSwatch
+                      swatch={swatches.get(`${option.name}:${value.name}`)}
+                      name={value.name}
+                    />
+                  );
+                  return isDifferentProduct ? (
                     <Link
                       key={option.name + value.name}
-                      {...(!isDifferentProduct ? {rel: 'nofollow'} : {})}
                       to={`/products/${value.handle}?${optionsSearch(value.selectedOptions)}`}
                       preventScrollReset
                       prefetch="intent"
                       replace
-                      className={clsx(
-                        'leading-none py-1 border-b-[1.5px] cursor-pointer transition-all duration-200',
-                        value.selected
-                          ? 'border-primary/50'
-                          : 'border-primary/0',
-                        value.available ? 'opacity-100' : 'opacity-50',
-                      )}
+                      className={className}
                     >
-                      <ProductOptionSwatch
-                        swatch={swatches.get(`${option.name}:${value.name}`)}
-                        name={value.name}
-                      />
+                      {swatch}
                     </Link>
+                  ) : (
+                    <button
+                      key={option.name + value.name}
+                      type="button"
+                      aria-pressed={value.selected}
+                      className={className}
+                      {...register('optionValue', {
+                        optionName: option.name,
+                        value: value.name,
+                      })}
+                    >
+                      {swatch}
+                    </button>
                   );
                 })
               )}
