@@ -101,6 +101,7 @@ export function ProductCard({
               merchandiseId: firstVariant.id,
             },
           ]}
+          productId={product.id}
           variant="secondary"
           className="mt-2"
         >

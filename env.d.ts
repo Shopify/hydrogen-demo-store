@@ -29,6 +29,7 @@ declare global {
     PUBLIC_CUSTOMER_ACCOUNT_API_URL: string;
     PUBLIC_CHECKOUT_DOMAIN: string;
     SHOP_ID: string;
+    INTELLIGEMS_ORG_ID: string;
   }
 }
 

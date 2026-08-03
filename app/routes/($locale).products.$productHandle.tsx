@@ -162,6 +162,7 @@ export default function Product() {
                 )}
               </div>
               <ProductForm
+                productId={product.id}
                 productOptions={productOptions}
                 selectedVariant={selectedVariant}
                 storeDomain={storeDomain}
@@ -222,10 +223,12 @@ export default function Product() {
 }
 
 export function ProductForm({
+  productId,
   productOptions,
   selectedVariant,
   storeDomain,
 }: {
+  productId: string;
   productOptions: MappedProductOptions[];
   selectedVariant: ProductFragment['selectedOrFirstAvailableVariant'];
   storeDomain: string;
@@ -369,6 +372,7 @@ export function ProductForm({
                     quantity: 1,
                   },
                 ]}
+                productId={productId}
                 variant="primary"
                 data-test="add-to-cart"
               >

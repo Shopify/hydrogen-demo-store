@@ -3,6 +3,7 @@ import {hydrogen} from '@shopify/hydrogen/vite';
 import {oxygen} from '@shopify/mini-oxygen/vite';
 import {vitePlugin as remix} from '@remix-run/dev';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import {intelligemsVitePlugin} from '@intelligems/headless/hydrogen';
 
 export default defineConfig({
   plugins: [
@@ -18,10 +19,11 @@ export default defineConfig({
       },
     }),
     tsconfigPaths(),
+    intelligemsVitePlugin(),
   ],
   ssr: {
     optimizeDeps: {
-      include: ['typographic-base'],
+      include: ['typographic-base', '@intelligems/headless/hydrogen'],
     },
   },
   optimizeDeps: {

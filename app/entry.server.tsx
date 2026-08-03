@@ -24,6 +24,13 @@ export default async function handleRequest(
       'https://www.googletagmanager.com',
       ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:*'] : []),
     ],
+    // Intelligems fetches these from the browser, where CSP applies:
+    //   api - /v3/track (pageviews) and /headless/version
+    //   cdn - the config JSON. Needed even though the root loader already
+    //         fetches it: that runs server-side (CSP-exempt), but the client
+    //         refetches with ?geo=true when the geo cookie is missing.
+    // Hydrogen appends its defaults to this, so monorail + store domain remain.
+    connectSrc: ['https://api.intelligems.io', 'https://cdn.intelligems.io'],
   });
 
   const body = await renderToReadableStream(

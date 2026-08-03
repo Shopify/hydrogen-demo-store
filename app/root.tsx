@@ -23,6 +23,12 @@ import {
   getSeoMeta,
   type SeoConfig,
 } from '@shopify/hydrogen';
+import {
+  IntelligemsHydrogenProvider,
+  getIntelligemsConfig,
+  useIgTrack,
+  type IntelligemsProviderProps,
+} from '@intelligems/headless/hydrogen';
 import invariant from 'tiny-invariant';
 
 import {PageLayout} from '~/components/PageLayout';
@@ -96,18 +102,23 @@ export async function loader(args: LoaderFunctionArgs) {
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
 async function loadCriticalData({request, context}: LoaderFunctionArgs) {
-  const [layout] = await Promise.all([
+  const {storefront, env} = context;
+
+  const [layout, intelligemsConfig] = await Promise.all([
     getLayoutData(context),
-    // Add other queries here, so that they are loaded in parallel
+    getIntelligemsConfig(env.INTELLIGEMS_ORG_ID, 5),
   ]);
 
   const seo = seoPayload.root({shop: layout.shop, url: request.url});
 
-  const {storefront, env} = context;
-
   return {
     layout,
     seo,
+    intelligems: {
+      config: intelligemsConfig,
+      organizationId: env.INTELLIGEMS_ORG_ID,
+      storefrontApiToken: env.PUBLIC_STOREFRONT_API_TOKEN,
+    },
     shop: getShopAnalytics({
       storefront,
       publicStorefrontId: env.PUBLIC_STOREFRONT_ID,
@@ -128,16 +139,32 @@ async function loadCriticalData({request, context}: LoaderFunctionArgs) {
  */
 function loadDeferredData({context}: LoaderFunctionArgs) {
   const {cart, customerAccount} = context;
+  const cartPromise = cart.get();
 
   return {
     isLoggedIn: customerAccount.isLoggedIn(),
-    cart: cart.get(),
+    cart: cartPromise,
+    // Intelligems wants the cart id (`gid://shopify/Cart/...`)
+    cartOrCheckoutToken: cartPromise.then((c) => c?.id ?? null),
   };
 }
 
 export const meta = ({data}: MetaArgs<typeof loader>) => {
   return getSeoMeta(data!.seo as SeoConfig);
 };
+
+function IntelligemsTracker({
+  cartOrCheckoutToken,
+  country,
+  currency,
+}: {
+  cartOrCheckoutToken: Promise<string | null> | string | null;
+  country: string;
+  currency: string;
+}) {
+  useIgTrack({cartOrCheckoutToken, country, currency});
+  return null;
+}
 
 function Layout({children}: {children?: React.ReactNode}) {
   const nonce = useNonce();
@@ -156,18 +183,34 @@ function Layout({children}: {children?: React.ReactNode}) {
       </head>
       <body>
         {data ? (
-          <Analytics.Provider
-            cart={data.cart}
-            shop={data.shop}
-            consent={data.consent}
+          <IntelligemsHydrogenProvider
+            // Remix's Jsonify makes optional fields structurally incompatible.
+            config={
+              data.intelligems.config as IntelligemsProviderProps['config']
+            }
+            organizationId={data.intelligems.organizationId}
+            storefrontApiToken={data.intelligems.storefrontApiToken}
+            activeCurrencyCode={locale.currency}
+            antiFlicker={true}
           >
-            <PageLayout
-              key={`${locale.language}-${locale.country}`}
-              layout={data.layout}
+            <Analytics.Provider
+              cart={data.cart}
+              shop={data.shop}
+              consent={data.consent}
             >
-              {children}
-            </PageLayout>
-          </Analytics.Provider>
+              <IntelligemsTracker
+                cartOrCheckoutToken={data.cartOrCheckoutToken}
+                country={locale.country}
+                currency={locale.currency}
+              />
+              <PageLayout
+                key={`${locale.language}-${locale.country}`}
+                layout={data.layout}
+              >
+                {children}
+              </PageLayout>
+            </Analytics.Provider>
+          </IntelligemsHydrogenProvider>
         ) : (
           children
         )}
