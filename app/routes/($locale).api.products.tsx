@@ -1,9 +1,11 @@
-import {json, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import type {ProductSortKeys} from '@shopify/hydrogen/storefront-api-types';
-import {flattenConnection} from '@shopify/hydrogen';
+import {Cache, flattenConnection} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
 
+import type {Route} from './+types/($locale).api.products';
+
 import {PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
+import {storefrontClientContext} from '~/lib/storefront';
 
 /**
  * Fetch a given set of products from the storefront API
@@ -14,10 +16,8 @@ import {PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
  * @returns Product[]
  * @see https://shopify.dev/api/storefront/current/queries/products
  */
-export async function loader({
-  request,
-  context: {storefront},
-}: LoaderFunctionArgs) {
+export async function loader({request, context}: Route.LoaderArgs) {
+  const storefrontClient = context.get(storefrontClientContext);
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
 
@@ -45,23 +45,21 @@ export async function loader({
     // noop
   }
 
-  const {products} = await storefront.query(API_ALL_PRODUCTS_QUERY, {
+  const {data} = await storefrontClient.graphql(API_ALL_PRODUCTS_QUERY, {
     variables: {
       count,
       query,
       reverse,
       sortKey,
-      country: storefront.i18n.country,
-      language: storefront.i18n.language,
     },
-    cache: storefront.CacheLong(),
+    cache: Cache.long(),
   });
 
-  invariant(products, 'No data returned from top products query');
+  invariant(data?.products, 'No data returned from top products query');
 
-  return json({
-    products: flattenConnection(products),
-  });
+  return {
+    products: flattenConnection(data.products),
+  };
 }
 
 const API_ALL_PRODUCTS_QUERY = `#graphql

@@ -1,6 +1,6 @@
-import type {LoaderFunctionArgs} from '@remix-run/server-runtime';
+import type {Route} from './+types/[sitemap-empty.xml]';
 
-export async function loader({request}: LoaderFunctionArgs) {
+export async function loader({request}: Route.LoaderArgs) {
   const url = new URL(request.url);
   const baseUrl = url.origin;
 

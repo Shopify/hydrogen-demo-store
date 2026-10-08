@@ -1,36 +1,46 @@
 import clsx from 'clsx';
-import {json, redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import {useLoaderData, type MetaFunction} from '@remix-run/react';
-import {Money, Image, flattenConnection} from '@shopify/hydrogen';
+import {redirect, useLoaderData} from 'react-router';
+import {flattenConnection} from '@shopify/hydrogen';
 import type {FulfillmentStatus} from '@shopify/hydrogen/customer-account-api-types';
-
 import type {OrderFragment} from 'customer-accountapi.generated';
+
+import type {Route} from './+types/($locale).account.orders.$id';
+
 import {statusMessage} from '~/lib/utils';
 import {Link} from '~/components/Link';
+import {Image} from '~/components/Image';
+import {Money} from '~/components/Money';
 import {Heading, PageHeader, Text} from '~/components/Text';
 import {CUSTOMER_ORDER_QUERY} from '~/graphql/customer-account/CustomerOrderQuery';
+import {getAuthenticatedCustomerClient} from '~/lib/customer-account.server';
+import {getLocalePrefix} from '~/lib/redirect';
 
-export const meta: MetaFunction<typeof loader> = ({data}) => {
+export const meta = ({data}: Route.MetaArgs) => {
   return [{title: `Order ${data?.order?.name}`}];
 };
 
-export async function loader({request, context, params}: LoaderFunctionArgs) {
+export async function loader({request, context, params}: Route.LoaderArgs) {
   if (!params.id) {
-    return redirect(params?.locale ? `${params.locale}/account` : '/account');
+    return redirect(`${getLocalePrefix(params.locale)}/account`);
   }
 
   const queryParams = new URL(request.url).searchParams;
   const orderToken = queryParams.get('key');
+
+  const {client, accessToken} = await getAuthenticatedCustomerClient(
+    request,
+    context,
+  );
 
   try {
     const orderId = orderToken
       ? `gid://shopify/Order/${params.id}?key=${orderToken}`
       : `gid://shopify/Order/${params.id}`;
 
-    const {data, errors} = await context.customerAccount.query(
-      CUSTOMER_ORDER_QUERY,
-      {variables: {orderId}},
-    );
+    const {data, errors} = await client.graphql(CUSTOMER_ORDER_QUERY, {
+      accessToken,
+      variables: {orderId},
+    });
 
     if (errors?.length || !data?.order || !data?.order?.lineItems) {
       throw new Error('order information');
@@ -58,13 +68,13 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
         ? fulfillments[0].status
         : ('OPEN' as FulfillmentStatus);
 
-    return json({
+    return {
       order,
       lineItems,
       discountValue,
       discountPercentage,
       fulfillmentStatus,
-    });
+    };
   } catch (error) {
     throw new Response(error instanceof Error ? error.message : undefined, {
       status: 404,

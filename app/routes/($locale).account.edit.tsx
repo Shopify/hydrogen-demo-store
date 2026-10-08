@@ -1,22 +1,25 @@
-import {json, redirect, type ActionFunction} from '@shopify/remix-oxygen';
 import {
+  data,
+  redirect,
   useActionData,
   Form,
   useOutletContext,
   useNavigation,
-} from '@remix-run/react';
+} from 'react-router';
 import type {
   Customer,
   CustomerUpdateInput,
 } from '@shopify/hydrogen/customer-account-api-types';
 import invariant from 'tiny-invariant';
 
+import type {Route} from './+types/($locale).account.edit';
+
 import {Button} from '~/components/Button';
 import {Text} from '~/components/Text';
 import {getInputStyleClasses} from '~/lib/utils';
 import {CUSTOMER_UPDATE_MUTATION} from '~/graphql/customer-account/CustomerUpdateMutation';
-
-import {doLogout} from './($locale).account_.logout';
+import {getAuthenticatedCustomerClient} from '~/lib/customer-account.server';
+import {getLocalePrefix} from '~/lib/redirect';
 
 export interface AccountOutletContext {
   customer: Customer;
@@ -47,14 +50,13 @@ export const handle = {
   renderInModal: true,
 };
 
-export const action: ActionFunction = async ({request, context, params}) => {
+export async function action({request, context, params}: Route.ActionArgs) {
   const formData = await request.formData();
 
-  // Double-check current user is logged in.
-  // Will throw a logout redirect if not.
-  if (!(await context.customerAccount.isLoggedIn())) {
-    throw await doLogout(context);
-  }
+  const {client, accessToken} = await getAuthenticatedCustomerClient(
+    request,
+    context,
+  );
 
   try {
     const customer: CustomerUpdateInput = {};
@@ -64,9 +66,10 @@ export const action: ActionFunction = async ({request, context, params}) => {
     formDataHas(formData, 'lastName') &&
       (customer.lastName = formData.get('lastName') as string);
 
-    const {data, errors} = await context.customerAccount.mutate(
+    const {data: mutationData, errors} = await client.graphql(
       CUSTOMER_UPDATE_MUTATION,
       {
+        accessToken,
         variables: {
           customer,
         },
@@ -76,20 +79,20 @@ export const action: ActionFunction = async ({request, context, params}) => {
     invariant(!errors?.length, errors?.[0]?.message);
 
     invariant(
-      !data?.customerUpdate?.userErrors?.length,
-      data?.customerUpdate?.userErrors?.[0]?.message,
+      !mutationData?.customerUpdate?.userErrors?.length,
+      mutationData?.customerUpdate?.userErrors?.[0]?.message,
     );
 
-    return redirect(params?.locale ? `${params.locale}/account` : '/account');
+    return redirect(`${getLocalePrefix(params.locale)}/account`);
   } catch (error: any) {
-    return json(
+    return data(
       {formError: error?.message},
       {
         status: 400,
       },
     );
   }
-};
+}
 
 /**
  * Since this component is nested in `accounts/`, it is rendered in a modal via `<Outlet>` in `account.tsx`.

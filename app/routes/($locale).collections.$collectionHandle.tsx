@@ -1,24 +1,15 @@
-import {useEffect} from 'react';
-import {
-  json,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData, useNavigate} from '@remix-run/react';
+import {useEffect, useRef} from 'react';
+import {useLoaderData, useNavigate} from 'react-router';
 import {useInView} from 'react-intersection-observer';
 import type {
   Filter,
   ProductCollectionSortKeys,
   ProductFilter,
 } from '@shopify/hydrogen/storefront-api-types';
-import {
-  Pagination,
-  flattenConnection,
-  getPaginationVariables,
-  Analytics,
-  getSeoMeta,
-} from '@shopify/hydrogen';
+import {flattenConnection} from '@shopify/hydrogen';
 import invariant from 'tiny-invariant';
+
+import type {Route} from './+types/($locale).collections.$collectionHandle';
 
 import {PageHeader, Section, Text} from '~/components/Text';
 import {Grid} from '~/components/Grid';
@@ -31,15 +22,21 @@ import {seoPayload} from '~/lib/seo.server';
 import {FILTER_URL_PREFIX} from '~/components/SortFilter';
 import {getImageLoadingPriority} from '~/lib/const';
 import {parseAsCurrency} from '~/lib/utils';
+import {getLocaleFromRequest} from '~/lib/i18n';
+import {getSeoMeta} from '~/lib/seo-meta';
+import {Pagination, getPaginationVariables} from '~/lib/pagination';
+import {storefrontClientContext} from '~/lib/storefront';
+import {AnalyticsEvent, getAnalytics} from '~/lib/analytics';
 
 export const headers = routeHeaders;
 
-export async function loader({params, request, context}: LoaderFunctionArgs) {
+export async function loader({params, request, context}: Route.LoaderArgs) {
+  const storefrontClient = context.get(storefrontClientContext);
   const paginationVariables = getPaginationVariables(request, {
     pageBy: 8,
   });
   const {collectionHandle} = params;
-  const locale = context.storefront.i18n;
+  const locale = getLocaleFromRequest(request);
 
   invariant(collectionHandle, 'Missing collectionHandle param');
 
@@ -61,22 +58,20 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
     [] as ProductFilter[],
   );
 
-  const {collection, collections} = await context.storefront.query(
-    COLLECTION_QUERY,
-    {
-      variables: {
-        ...paginationVariables,
-        handle: collectionHandle,
-        filters,
-        sortKey,
-        reverse,
-        country: context.storefront.i18n.country,
-        language: context.storefront.i18n.language,
-      },
+  const {data} = await storefrontClient.graphql(COLLECTION_QUERY, {
+    variables: {
+      ...paginationVariables,
+      handle: collectionHandle,
+      filters,
+      sortKey,
+      reverse,
     },
-  );
+  });
 
-  if (!collection) {
+  const collection = data?.collection;
+  const collections = data?.collections;
+
+  if (!collection || !collections) {
     throw new Response('collection', {status: 404});
   }
 
@@ -129,16 +124,16 @@ export async function loader({params, request, context}: LoaderFunctionArgs) {
     })
     .filter((filter): filter is NonNullable<typeof filter> => filter !== null);
 
-  return json({
+  return {
     collection,
     appliedFilters,
     collections: flattenConnection(collections),
     seo,
-  });
+  };
 }
 
-export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+export const meta: Route.MetaFunction = ({matches}) => {
+  return getSeoMeta(...matches.map((match) => (match?.data as any)?.seo));
 };
 
 export default function Collection() {
@@ -204,16 +199,30 @@ export default function Collection() {
           </Pagination>
         </SortFilter>
       </Section>
-      <Analytics.CollectionView
-        data={{
-          collection: {
-            id: collection.id,
-            handle: collection.handle,
-          },
-        }}
+      <CollectionViewTracker
+        collection={{id: collection.id, handle: collection.handle}}
       />
     </>
   );
+}
+
+function CollectionViewTracker({
+  collection,
+}: {
+  collection: {id: string; handle: string};
+}) {
+  const lastPublishedId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (lastPublishedId.current === collection.id) return;
+    lastPublishedId.current = collection.id;
+    getAnalytics()?.publish(AnalyticsEvent.COLLECTION_VIEWED, {
+      collection,
+      url: window.location.href,
+    });
+  }, [collection]);
+
+  return null;
 }
 
 function ProductsLoadedOnScroll({

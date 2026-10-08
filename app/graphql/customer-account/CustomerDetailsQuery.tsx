@@ -1,4 +1,6 @@
-const CUSTOMER_FRAGMENT = `#graphql
+import {gql} from '@shopify/hydrogen/customer-account';
+
+const ORDER_CARD_FRAGMENT = gql(`
   fragment OrderCard on Order {
     id
     number
@@ -27,7 +29,9 @@ const CUSTOMER_FRAGMENT = `#graphql
       }
     }
   }
+`);
 
+const ADDRESS_PARTIAL_FRAGMENT = gql(`
   fragment AddressPartial on CustomerAddress {
     id
     formatted
@@ -42,7 +46,10 @@ const CUSTOMER_FRAGMENT = `#graphql
     zip
     phoneNumber
   }
+`);
 
+const CUSTOMER_FRAGMENT = gql(
+  `
   fragment CustomerDetails on Customer {
     firstName
     lastName
@@ -70,14 +77,18 @@ const CUSTOMER_FRAGMENT = `#graphql
       }
     }
   }
-` as const;
+`,
+  [ADDRESS_PARTIAL_FRAGMENT, ORDER_CARD_FRAGMENT],
+);
 
 // NOTE: https://shopify.dev/docs/api/customer/latest/queries/customer
-export const CUSTOMER_DETAILS_QUERY = `#graphql
+export const CUSTOMER_DETAILS_QUERY = gql(
+  `
   query CustomerDetails {
     customer {
       ...CustomerDetails
     }
   }
-  ${CUSTOMER_FRAGMENT}
-` as const;
+`,
+  [CUSTOMER_FRAGMENT],
+);

@@ -1,16 +1,12 @@
+import {Await, Form, useLoaderData} from 'react-router';
+import {Suspense, useEffect, useRef} from 'react';
+import invariant from 'tiny-invariant';
+
+import type {Route} from './+types/($locale).search';
 import {
-  defer,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {Await, Form, useLoaderData} from '@remix-run/react';
-import {Suspense} from 'react';
-import {
-  Pagination,
-  getPaginationVariables,
-  Analytics,
-  getSeoMeta,
-} from '@shopify/hydrogen';
+  getFeaturedData,
+  type FeaturedData,
+} from './($locale).featured-products';
 
 import {Heading, PageHeader, Section, Text} from '~/components/Text';
 import {Input} from '~/components/Input';
@@ -21,28 +17,29 @@ import {FeaturedCollections} from '~/components/FeaturedCollections';
 import {PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
 import {getImageLoadingPriority, PAGINATION_SIZE} from '~/lib/const';
 import {seoPayload} from '~/lib/seo.server';
-
+import {getSeoMeta} from '~/lib/seo-meta';
+import {Pagination, getPaginationVariables} from '~/lib/pagination';
 import {
-  getFeaturedData,
-  type FeaturedData,
-} from './($locale).featured-products';
+  storefrontClientContext,
+  type AppStorefrontClient,
+} from '~/lib/storefront';
+import {AnalyticsEvent, getAnalytics} from '~/lib/analytics';
 
-export async function loader({
-  request,
-  context: {storefront},
-}: LoaderFunctionArgs) {
+export async function loader({request, context}: Route.LoaderArgs) {
+  const storefrontClient = context.get(storefrontClientContext);
   const searchParams = new URL(request.url).searchParams;
   const searchTerm = searchParams.get('q')!;
   const variables = getPaginationVariables(request, {pageBy: 8});
 
-  const {products} = await storefront.query(SEARCH_QUERY, {
+  const {data} = await storefrontClient.graphql(SEARCH_QUERY, {
     variables: {
       searchTerm,
       ...variables,
-      country: storefront.i18n.country,
-      language: storefront.i18n.language,
     },
   });
+
+  const products = data?.products;
+  invariant(products, 'No search data returned from Shopify API');
 
   const shouldGetRecommendations = !searchTerm || products?.nodes?.length === 0;
 
@@ -64,18 +61,18 @@ export async function loader({
     },
   });
 
-  return defer({
+  return {
     seo,
     searchTerm,
     products,
     noResultRecommendations: shouldGetRecommendations
-      ? getNoResultRecommendations(storefront)
+      ? getNoResultRecommendations(storefrontClient)
       : Promise.resolve(null),
-  });
+  };
 }
 
-export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+export const meta: Route.MetaFunction = ({matches}) => {
+  return getSeoMeta(...matches.map((match) => (match?.data as any)?.seo));
 };
 
 export default function Search() {
@@ -138,9 +135,31 @@ export default function Search() {
           </Pagination>
         </Section>
       )}
-      <Analytics.SearchView data={{searchTerm, searchResults: products}} />
+      <SearchViewTracker searchTerm={searchTerm} searchResults={products} />
     </>
   );
+}
+
+function SearchViewTracker({
+  searchTerm,
+  searchResults,
+}: {
+  searchTerm: string;
+  searchResults: unknown;
+}) {
+  const lastPublishedTerm = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (lastPublishedTerm.current === searchTerm) return;
+    lastPublishedTerm.current = searchTerm;
+    getAnalytics()?.publish(AnalyticsEvent.SEARCH_VIEWED, {
+      searchTerm,
+      searchResults,
+      url: window.location.href,
+    });
+  }, [searchTerm, searchResults]);
+
+  return null;
 }
 
 function NoResults({
@@ -188,9 +207,9 @@ function NoResults({
 }
 
 export function getNoResultRecommendations(
-  storefront: LoaderFunctionArgs['context']['storefront'],
+  storefrontClient: AppStorefrontClient,
 ) {
-  return getFeaturedData(storefront, {pageBy: PAGINATION_SIZE});
+  return getFeaturedData(storefrontClient, {pageBy: PAGINATION_SIZE});
 }
 
 const SEARCH_QUERY = `#graphql

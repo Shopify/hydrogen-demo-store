@@ -1,5 +1,7 @@
+import {gql} from '@shopify/hydrogen/customer-account';
+
 // NOTE: https://shopify.dev/docs/api/customer/latest/mutations/customerAddressUpdate
-export const UPDATE_ADDRESS_MUTATION = `#graphql
+export const UPDATE_ADDRESS_MUTATION = gql(`
   mutation customerAddressUpdate(
     $address: CustomerAddressInput!
     $addressId: ID!
@@ -17,10 +19,10 @@ export const UPDATE_ADDRESS_MUTATION = `#graphql
       }
     }
   }
-` as const;
+`);
 
 // NOTE: https://shopify.dev/docs/api/customer/latest/mutations/customerAddressDelete
-export const DELETE_ADDRESS_MUTATION = `#graphql
+export const DELETE_ADDRESS_MUTATION = gql(`
   mutation customerAddressDelete(
     $addressId: ID!,
   ) {
@@ -33,10 +35,10 @@ export const DELETE_ADDRESS_MUTATION = `#graphql
       }
     }
   }
-` as const;
+`);
 
 // NOTE: https://shopify.dev/docs/api/customer/latest/mutations/customerAddressCreate
-export const CREATE_ADDRESS_MUTATION = `#graphql
+export const CREATE_ADDRESS_MUTATION = gql(`
   mutation customerAddressCreate(
     $address: CustomerAddressInput!
     $defaultAddress: Boolean
@@ -55,4 +57,4 @@ export const CREATE_ADDRESS_MUTATION = `#graphql
       }
     }
   }
-` as const;
+`);

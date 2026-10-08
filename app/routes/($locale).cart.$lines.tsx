@@ -1,4 +1,9 @@
-import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {redirect} from 'react-router';
+import {cartQueries, createCartCookie} from '@shopify/hydrogen';
+
+import type {Route} from './+types/($locale).cart.$lines';
+
+import {storefrontClientContext} from '~/lib/storefront';
 
 /**
  * Automatically creates a new cart based on the URL and redirects straight to checkout.
@@ -19,10 +24,10 @@ import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
  * ```
  * @preserve
  */
-export async function loader({request, context, params}: LoaderFunctionArgs) {
-  const {cart} = context;
+export async function loader({request, context, params}: Route.LoaderArgs) {
+  const storefrontClient = context.get(storefrontClientContext);
   const {lines} = params;
-  const linesMap = lines?.split(',').map((line) => {
+  const linesMap = (lines?.split(',') ?? []).map((line) => {
     const lineDetails = line.split(':');
     const variantId = lineDetails[0];
     const quantity = parseInt(lineDetails[1], 10);
@@ -39,26 +44,30 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
   const discount = searchParams.get('discount');
   const discountArray = discount ? [discount] : [];
 
-  //! create a cart
-  const result = await cart.create({
-    lines: linesMap,
-    discountCodes: discountArray,
-  });
+  const {data, errors} = await storefrontClient.graphql(
+    cartQueries.cartCreate,
+    {
+      variables: {
+        input: {
+          lines: linesMap,
+          discountCodes: discountArray,
+        },
+      },
+    },
+  );
 
-  const cartResult = result.cart;
+  const cartResult = data?.cartCreate?.cart;
 
-  if (result.errors?.length || !cartResult) {
+  if (errors?.length || data?.cartCreate?.userErrors?.length || !cartResult) {
     throw new Response('Link may be expired. Try checking the URL.', {
       status: 410,
     });
   }
 
-  // Update cart id in cookie
-  const headers = cart.setCartId(cartResult.id);
-
-  //! redirect to checkout
   if (cartResult.checkoutUrl) {
-    return redirect(cartResult.checkoutUrl, {headers});
+    return redirect(cartResult.checkoutUrl, {
+      headers: {'Set-Cookie': createCartCookie(cartResult.id)},
+    });
   } else {
     throw new Error('No checkout URL found');
   }

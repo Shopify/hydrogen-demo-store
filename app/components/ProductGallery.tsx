@@ -1,6 +1,6 @@
-import {Image} from '@shopify/hydrogen';
-
 import type {MediaFragment} from 'storefrontapi.generated';
+
+import {Image} from '~/components/Image';
 
 /**
  * A client component that defines a media gallery for hosting images, 3D models, and videos of products

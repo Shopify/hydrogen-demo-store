@@ -1,4 +1,3 @@
-import {type SeoConfig} from '@shopify/hydrogen';
 import type {
   Article,
   Blog,
@@ -19,8 +18,9 @@ import type {
   Product as SeoProduct,
   WebPage,
 } from 'schema-dts';
-
 import type {ShopFragment} from 'storefrontapi.generated';
+
+import {type SeoConfig} from '~/lib/seo-meta';
 
 function root({
   shop,

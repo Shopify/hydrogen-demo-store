@@ -1,24 +1,28 @@
-import {json, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import invariant from 'tiny-invariant';
 
+import type {Route} from './+types/($locale).featured-products';
+
+import {
+  storefrontClientContext,
+  type AppStorefrontClient,
+} from '~/lib/storefront';
 import {
   PRODUCT_CARD_FRAGMENT,
   FEATURED_COLLECTION_FRAGMENT,
 } from '~/data/fragments';
 
-export async function loader({context: {storefront}}: LoaderFunctionArgs) {
-  return json(await getFeaturedData(storefront));
+export async function loader({context}: Route.LoaderArgs) {
+  const storefrontClient = context.get(storefrontClientContext);
+  return await getFeaturedData(storefrontClient);
 }
 
 export async function getFeaturedData(
-  storefront: LoaderFunctionArgs['context']['storefront'],
+  storefrontClient: AppStorefrontClient,
   variables: {pageBy?: number} = {},
 ) {
-  const data = await storefront.query(FEATURED_ITEMS_QUERY, {
+  const {data} = await storefrontClient.graphql(FEATURED_ITEMS_QUERY, {
     variables: {
       pageBy: 12,
-      country: storefront.i18n.country,
-      language: storefront.i18n.language,
       ...variables,
     },
   });

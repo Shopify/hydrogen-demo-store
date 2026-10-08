@@ -1,20 +1,19 @@
-import {
-  json,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
+import {useLoaderData} from 'react-router';
 import invariant from 'tiny-invariant';
-import {getSeoMeta} from '@shopify/hydrogen';
+
+import type {Route} from './+types/($locale).policies.$policyHandle';
 
 import {PageHeader, Section} from '~/components/Text';
 import {Button} from '~/components/Button';
 import {routeHeaders} from '~/data/cache';
 import {seoPayload} from '~/lib/seo.server';
+import {getSeoMeta} from '~/lib/seo-meta';
+import {storefrontClientContext} from '~/lib/storefront';
 
 export const headers = routeHeaders;
 
-export async function loader({request, params, context}: LoaderFunctionArgs) {
+export async function loader({request, params, context}: Route.LoaderArgs) {
+  const storefrontClient = context.get(storefrontClientContext);
   invariant(params.policyHandle, 'Missing policy handle');
 
   const policyName = params.policyHandle.replace(
@@ -22,14 +21,13 @@ export async function loader({request, params, context}: LoaderFunctionArgs) {
     (_: unknown, m1: string) => m1.toUpperCase(),
   ) as 'privacyPolicy' | 'shippingPolicy' | 'termsOfService' | 'refundPolicy';
 
-  const data = await context.storefront.query(POLICY_CONTENT_QUERY, {
+  const {data} = await storefrontClient.graphql(POLICY_CONTENT_QUERY, {
     variables: {
       privacyPolicy: false,
       shippingPolicy: false,
       termsOfService: false,
       refundPolicy: false,
       [policyName]: true,
-      language: context.storefront.i18n.language,
     },
   });
 
@@ -42,11 +40,11 @@ export async function loader({request, params, context}: LoaderFunctionArgs) {
 
   const seo = seoPayload.policy({policy, url: request.url});
 
-  return json({policy, seo});
+  return {policy, seo};
 }
 
-export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+export const meta: Route.MetaFunction = ({matches}) => {
+  return getSeoMeta(...matches.map((match) => (match?.data as any)?.seo));
 };
 
 export default function Policies() {

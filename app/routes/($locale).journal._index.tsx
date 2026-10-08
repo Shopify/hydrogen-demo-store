@@ -1,35 +1,35 @@
-import {
-  json,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
-import {flattenConnection, getSeoMeta, Image} from '@shopify/hydrogen';
+import {useLoaderData} from 'react-router';
+import {flattenConnection} from '@shopify/hydrogen';
+import type {ArticleFragment} from 'storefrontapi.generated';
+
+import type {Route} from './+types/($locale).journal._index';
 
 import {PageHeader, Section} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {Grid} from '~/components/Grid';
+import {Image} from '~/components/Image';
 import {getImageLoadingPriority, PAGINATION_SIZE} from '~/lib/const';
 import {seoPayload} from '~/lib/seo.server';
+import {getSeoMeta} from '~/lib/seo-meta';
+import {getLocaleFromRequest} from '~/lib/i18n';
 import {routeHeaders} from '~/data/cache';
-import type {ArticleFragment} from 'storefrontapi.generated';
+import {storefrontClientContext} from '~/lib/storefront';
 
 const BLOG_HANDLE = 'Journal';
 
 export const headers = routeHeaders;
 
-export const loader = async ({
-  request,
-  context: {storefront},
-}: LoaderFunctionArgs) => {
-  const {language, country} = storefront.i18n;
-  const {blog} = await storefront.query(BLOGS_QUERY, {
+export const loader = async ({request, context}: Route.LoaderArgs) => {
+  const storefrontClient = context.get(storefrontClientContext);
+  const {language, country} = getLocaleFromRequest(request);
+  const {data} = await storefrontClient.graphql(BLOGS_QUERY, {
     variables: {
       blogHandle: BLOG_HANDLE,
       pageBy: PAGINATION_SIZE,
-      language,
     },
   });
+
+  const blog = data?.blog;
 
   if (!blog?.articles) {
     throw new Response('Not found', {status: 404});
@@ -49,11 +49,11 @@ export const loader = async ({
 
   const seo = seoPayload.blog({blog, url: request.url});
 
-  return json({articles, seo});
+  return {articles, seo};
 };
 
-export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+export const meta: Route.MetaFunction = ({matches}) => {
+  return getSeoMeta(...matches.map((match) => (match?.data as any)?.seo));
 };
 
 export default function Journals() {

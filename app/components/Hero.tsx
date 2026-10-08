@@ -1,16 +1,21 @@
 import clsx from 'clsx';
-import {MediaFile} from '@shopify/hydrogen';
 import type {
   MediaImage,
   Media,
   Video as MediaVideo,
 } from '@shopify/hydrogen/storefront-api-types';
-
 import type {CollectionContentFragment} from 'storefrontapi.generated';
+
 import {Heading, Text} from '~/components/Text';
 import {Link} from '~/components/Link';
+import {Image} from '~/components/Image';
 
-type HeroProps = CollectionContentFragment & {
+type HeroProps = Pick<
+  CollectionContentFragment,
+  'byline' | 'cta' | 'handle' | 'heading'
+> & {
+  spread?: {reference?: unknown} | null;
+  spreadSecondary?: {reference?: unknown} | null;
   height?: 'full';
   top?: boolean;
   loading?: HTMLImageElement['loading'];
@@ -42,7 +47,7 @@ export function Hero({
         )}
       >
         <div className="absolute inset-0 grid flex-grow grid-flow-col pointer-events-none auto-cols-fr -z-10 content-stretch overflow-clip">
-          {spread?.reference && (
+          {spread?.reference ? (
             <div>
               <SpreadMedia
                 sizes={
@@ -54,8 +59,8 @@ export function Hero({
                 loading={loading}
               />
             </div>
-          )}
-          {spreadSecondary?.reference && (
+          ) : null}
+          {spreadSecondary?.reference ? (
             <div className="hidden md:block">
               <SpreadMedia
                 sizes="50vw"
@@ -63,7 +68,7 @@ export function Hero({
                 loading={loading}
               />
             </div>
-          )}
+          ) : null}
         </div>
         <div className="flex flex-col items-baseline justify-between gap-4 px-6 py-8 sm:px-8 md:px-12 bg-gradient-to-t dark:from-contrast/60 dark:text-primary from-primary/60 text-contrast">
           {heading?.value && (
@@ -90,26 +95,38 @@ type SpreadMediaProps = {
 };
 
 function SpreadMedia({data, loading, sizes}: SpreadMediaProps) {
-  return (
-    <MediaFile
-      data={data}
-      className="block object-cover w-full h-full"
-      mediaOptions={{
-        video: {
-          controls: false,
-          muted: true,
-          loop: true,
-          playsInline: true,
-          autoPlay: true,
-          previewImageOptions: {src: data.previewImage?.url ?? ''},
-        },
-        image: {
-          loading,
-          crop: 'center',
-          sizes,
-          alt: data.alt || '',
-        },
-      }}
-    />
-  );
+  if (data.mediaContentType === 'VIDEO' && 'sources' in data) {
+    const video = data as MediaVideo;
+    return (
+      <video
+        className="block object-cover w-full h-full"
+        controls={false}
+        muted
+        loop
+        playsInline
+        autoPlay
+        poster={video.previewImage?.url ?? ''}
+      >
+        {video.sources.map((source) => (
+          <source key={source.url} src={source.url} type={source.mimeType} />
+        ))}
+      </video>
+    );
+  }
+
+  if (data.mediaContentType === 'IMAGE' && 'image' in data) {
+    const image = (data as MediaImage).image;
+    if (!image) return null;
+    return (
+      <Image
+        className="block object-cover w-full h-full"
+        data={image}
+        loading={loading}
+        sizes={sizes}
+        alt={data.alt || ''}
+      />
+    );
+  }
+
+  return null;
 }

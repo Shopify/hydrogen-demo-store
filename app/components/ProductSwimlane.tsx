@@ -1,4 +1,5 @@
 import type {HomepageFeaturedProductsQuery} from 'storefrontapi.generated';
+
 import {Section} from '~/components/Text';
 import {ProductCard} from '~/components/ProductCard';
 

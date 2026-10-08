@@ -41,7 +41,7 @@ jobs:
       - name: Build and Publish to Oxygen
         id: deploy
         run: |
-          npx shopify hydrogen deploy --auth-bypass-token --token "${{ secrets.OXYGEN_DEPLOYMENT_TOKEN_1000013955 }}"
+          npx shopify hydrogen deploy --auth-bypass-token --assets-dir dist/client --worker-dir dist/server --token "${{ secrets.OXYGEN_DEPLOYMENT_TOKEN_1000013955 }}"
           echo "AUTH_BYPASS_TOKEN=$(jq -r '.authBypassToken' h2_deploy_log.json)" >> $GITHUB_ENV
           echo "DEPLOYMENT_URL=$(jq -r '.url' h2_deploy_log.json)" >> $GITHUB_ENV
 

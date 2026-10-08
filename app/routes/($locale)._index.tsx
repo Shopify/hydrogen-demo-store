@@ -1,25 +1,24 @@
-import {
-  defer,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
 import {Suspense} from 'react';
-import {Await, useLoaderData} from '@remix-run/react';
-import {getSeoMeta} from '@shopify/hydrogen';
+import {Await, useLoaderData} from 'react-router';
+
+import type {Route} from './+types/($locale)._index';
 
 import {Hero} from '~/components/Hero';
 import {FeaturedCollections} from '~/components/FeaturedCollections';
 import {ProductSwimlane} from '~/components/ProductSwimlane';
 import {MEDIA_FRAGMENT, PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
 import {getHeroPlaceholder} from '~/lib/placeholders';
+import {getSeoMeta} from '~/lib/seo-meta';
 import {seoPayload} from '~/lib/seo.server';
 import {routeHeaders} from '~/data/cache';
+import {getLocaleFromRequest} from '~/lib/i18n';
+import {storefrontClientContext} from '~/lib/storefront';
 
 export const headers = routeHeaders;
 
-export async function loader(args: LoaderFunctionArgs) {
-  const {params, context} = args;
-  const {language, country} = context.storefront.i18n;
+export async function loader(args: Route.LoaderArgs) {
+  const {params, request} = args;
+  const {language, country} = getLocaleFromRequest(request);
 
   if (
     params.locale &&
@@ -36,24 +35,22 @@ export async function loader(args: LoaderFunctionArgs) {
   // Await the critical data required to render initial state of the page
   const criticalData = await loadCriticalData(args);
 
-  return defer({...deferredData, ...criticalData});
+  return {...deferredData, ...criticalData};
 }
 
 /**
  * Load data necessary for rendering content above the fold. This is the critical data
  * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
  */
-async function loadCriticalData({context, request}: LoaderFunctionArgs) {
-  const [{shop, hero}] = await Promise.all([
-    context.storefront.query(HOMEPAGE_SEO_QUERY, {
-      variables: {handle: 'freestyle'},
-    }),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
+async function loadCriticalData({context, request}: Route.LoaderArgs) {
+  const storefrontClient = context.get(storefrontClientContext);
+  const {data} = await storefrontClient.graphql(HOMEPAGE_SEO_QUERY, {
+    variables: {handle: 'freestyle'},
+  });
 
   return {
-    shop,
-    primaryHero: hero,
+    shop: data?.shop,
+    primaryHero: data?.hero,
     seo: seoPayload.home({url: request.url}),
   };
 }
@@ -63,21 +60,12 @@ async function loadCriticalData({context, request}: LoaderFunctionArgs) {
  * fetched after the initial page load. If it's unavailable, the page should still 200.
  * Make sure to not throw any errors here, as it will cause the page to 500.
  */
-function loadDeferredData({context}: LoaderFunctionArgs) {
-  const {language, country} = context.storefront.i18n;
+function loadDeferredData({context}: Route.LoaderArgs) {
+  const storefrontClient = context.get(storefrontClientContext);
 
-  const featuredProducts = context.storefront
-    .query(HOMEPAGE_FEATURED_PRODUCTS_QUERY, {
-      variables: {
-        /**
-         * Country and language properties are automatically injected
-         * into all queries. Passing them is unnecessary unless you
-         * want to override them from the following default:
-         */
-        country,
-        language,
-      },
-    })
+  const featuredProducts = storefrontClient
+    .graphql(HOMEPAGE_FEATURED_PRODUCTS_QUERY)
+    .then(({data}) => data ?? null)
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
       // eslint-disable-next-line no-console
@@ -85,14 +73,11 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
       return null;
     });
 
-  const secondaryHero = context.storefront
-    .query(COLLECTION_HERO_QUERY, {
-      variables: {
-        handle: 'backcountry',
-        country,
-        language,
-      },
+  const secondaryHero = storefrontClient
+    .graphql(COLLECTION_HERO_QUERY, {
+      variables: {handle: 'backcountry'},
     })
+    .then(({data}) => data ?? null)
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
       // eslint-disable-next-line no-console
@@ -100,13 +85,9 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
       return null;
     });
 
-  const featuredCollections = context.storefront
-    .query(FEATURED_COLLECTIONS_QUERY, {
-      variables: {
-        country,
-        language,
-      },
-    })
+  const featuredCollections = storefrontClient
+    .graphql(FEATURED_COLLECTIONS_QUERY)
+    .then(({data}) => data ?? null)
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
       // eslint-disable-next-line no-console
@@ -114,14 +95,11 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
       return null;
     });
 
-  const tertiaryHero = context.storefront
-    .query(COLLECTION_HERO_QUERY, {
-      variables: {
-        handle: 'winter-2022',
-        country,
-        language,
-      },
+  const tertiaryHero = storefrontClient
+    .graphql(COLLECTION_HERO_QUERY, {
+      variables: {handle: 'winter-2022'},
     })
+    .then(({data}) => data ?? null)
     .catch((error) => {
       // Log query errors, but don't throw them so the page can still render
       // eslint-disable-next-line no-console
@@ -137,8 +115,8 @@ function loadDeferredData({context}: LoaderFunctionArgs) {
   };
 }
 
-export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+export const meta: Route.MetaFunction = ({matches}) => {
+  return getSeoMeta(...matches.map((match) => (match?.data as any)?.seo));
 };
 
 export default function Homepage() {

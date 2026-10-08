@@ -1,11 +1,10 @@
-import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import type {Route} from './+types/[sitemap.xml]';
 
-import {getSitemapIndex} from 'app/lib/sitemap';
+import {getSitemapIndex} from '~/lib/sitemap';
+import {storefrontClientContext} from '~/lib/storefront';
 
-export async function loader({
-  request,
-  context: {storefront},
-}: LoaderFunctionArgs) {
+export async function loader({request, context}: Route.LoaderArgs) {
+  const storefront = context.get(storefrontClientContext);
   const url = new URL(request.url);
   const baseUrl = url.origin;
 

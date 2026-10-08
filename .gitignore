@@ -11,3 +11,5 @@ node_modules
 /test-results/
 /playwright-report/
 /playwright/.cache/
+/.react-router/
+*-graphql-env.d.ts

@@ -1,8 +1,10 @@
 import clsx from 'clsx';
-import {flattenConnection, Image, Money, useMoney} from '@shopify/hydrogen';
+import {flattenConnection} from '@shopify/hydrogen';
 import type {MoneyV2, Product} from '@shopify/hydrogen/storefront-api-types';
-
 import type {ProductCardFragment} from 'storefrontapi.generated';
+
+import {Image} from '~/components/Image';
+import {Money, useMoney} from '~/components/Money';
 import {Text} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {Button} from '~/components/Button';
@@ -95,12 +97,7 @@ export function ProductCard({
       </Link>
       {quickAdd && firstVariant.availableForSale && (
         <AddToCartButton
-          lines={[
-            {
-              quantity: 1,
-              merchandiseId: firstVariant.id,
-            },
-          ]}
+          merchandiseId={firstVariant.id}
           variant="secondary"
           className="mt-2"
         >

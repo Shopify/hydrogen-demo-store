@@ -1,71 +1,46 @@
-import {type HydrogenSession} from '@shopify/hydrogen';
-import {
-  createCookieSessionStorage,
-  type SessionStorage,
-  type Session,
-} from '@shopify/remix-oxygen';
+import {createContext, createCookieSessionStorage} from 'react-router';
+import type {ShopifyRouteHandlerContext} from '@shopify/hydrogen';
 
-/**
- * This is a custom session implementation for your Hydrogen shop.
- * Feel free to customize it to your needs, add helper methods, or
- * swap out the cookie-based implementation with something else!
- */
-export class AppSession implements HydrogenSession {
-  public isPending = false;
-  #sessionStorage;
-  #session;
+type ShopifyRouteSessionManager = ShopifyRouteHandlerContext['sessionManager'];
 
-  constructor(sessionStorage: SessionStorage, session: Session) {
-    this.#sessionStorage = sessionStorage;
-    this.#session = session;
-  }
+export type AppSessionManager = ShopifyRouteSessionManager & {
+  commit: () => Promise<HeadersInit | undefined>;
+};
 
-  static async init(request: Request, secrets: string[]) {
-    const storage = createCookieSessionStorage({
-      cookie: {
-        name: 'session',
-        httpOnly: true,
-        path: '/',
-        sameSite: 'lax',
-        secrets,
-      },
-    });
+export const sessionManagerContext = createContext<AppSessionManager>();
 
-    const session = await storage
-      .getSession(request.headers.get('Cookie'))
-      .catch(() => storage.getSession());
+export async function createRequestSessionManager(
+  request: Request,
+  env: Env,
+): Promise<AppSessionManager> {
+  const storage = createCookieSessionStorage({
+    cookie: {
+      name: 'session',
+      httpOnly: true,
+      path: '/',
+      sameSite: 'lax',
+      secrets: [env.SESSION_SECRET],
+    },
+  });
 
-    return new this(storage, session);
-  }
+  const session = await storage
+    .getSession(request.headers.get('Cookie'))
+    .catch(() => storage.getSession());
 
-  get has() {
-    return this.#session.has;
-  }
+  let dirty = false;
 
-  get get() {
-    return this.#session.get;
-  }
-
-  get flash() {
-    return this.#session.flash;
-  }
-
-  get unset() {
-    this.isPending = true;
-    return this.#session.unset;
-  }
-
-  get set() {
-    this.isPending = true;
-    return this.#session.set;
-  }
-
-  destroy() {
-    return this.#sessionStorage.destroySession(this.#session);
-  }
-
-  commit() {
-    this.isPending = false;
-    return this.#sessionStorage.commitSession(this.#session);
-  }
+  return {
+    getSessionOrigin: () => new URL(request.url).origin,
+    getSessionItem: (key: string) => session.get(key) as unknown,
+    setSessionItem: (key: string, value: unknown) => {
+      session.set(key, value);
+      dirty = true;
+    },
+    removeSessionItem: (key: string) => {
+      session.unset(key);
+      dirty = true;
+    },
+    commit: async () =>
+      dirty ? {'Set-Cookie': await storage.commitSession(session)} : undefined,
+  };
 }

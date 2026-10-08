@@ -1,16 +1,15 @@
-import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import type {Route} from './+types/sitemap.$type.$page[.xml]';
 
-import {getSitemap} from 'app/lib/sitemap';
+import {getSitemap} from '~/lib/sitemap';
+import {storefrontClientContext} from '~/lib/storefront';
 import {countries} from '~/data/countries';
 
 const locales = Object.keys(countries).filter((k) => k !== 'default');
 locales.unshift('en-us');
 
-export async function loader({
-  request,
-  params,
-  context: {storefront},
-}: LoaderFunctionArgs) {
+export async function loader({request, params, context}: Route.LoaderArgs) {
+  const storefront = context.get(storefrontClientContext);
+
   const response = await getSitemap({
     storefront,
     request,

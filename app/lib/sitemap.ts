@@ -1,8 +1,4 @@
-import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
-import type {
-  CountryCode,
-  LanguageCode,
-} from '@shopify/hydrogen/storefront-api-types';
+import type {AppStorefrontClient} from '~/lib/storefront';
 
 const SITEMAP_INDEX_PREFIX = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -11,8 +7,6 @@ const SITEMAP_INDEX_SUFFIX = `</sitemapindex>`;
 const SITEMAP_PREFIX = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">`;
 const SITEMAP_SUFFIX = `</urlset>`;
-
-type Locale = `${LanguageCode}-${CountryCode}`;
 
 type SITEMAP_INDEX_TYPE =
   | 'pages'
@@ -31,14 +25,12 @@ export async function getSitemapIndex({
   types = ['products', 'pages', 'collections', 'metaObjects', 'articles'],
   customUrls = [],
 }: {
-  storefront: LoaderFunctionArgs['context']['storefront'];
+  storefront: AppStorefrontClient;
   request: Request;
   types?: SITEMAP_INDEX_TYPE[];
   customUrls?: string[];
 }) {
-  const data = await storefront.query(SITEMAP_INDEX_QUERY, {
-    storefrontApiVersion: 'unstable',
-  });
+  const {data} = await storefront.graphql(SITEMAP_INDEX_QUERY);
 
   if (!data) {
     throw new Response('No data found', {status: 404});
@@ -50,7 +42,7 @@ export async function getSitemapIndex({
     SITEMAP_INDEX_PREFIX +
     types
       .map((type) =>
-        getSiteMapLinks(type, data[type].pagesCount.count, baseUrl),
+        getSiteMapLinks(type, data[type]?.pagesCount?.count ?? 0, baseUrl),
       )
       .join('\n') +
     customUrls
@@ -68,9 +60,9 @@ export async function getSitemapIndex({
 
 interface GetSiteMapOptions {
   /** The params object from Remix */
-  params: LoaderFunctionArgs['params'];
+  params: Record<string, string | undefined>;
   /** The Storefront API Client from Hydrogen */
-  storefront: LoaderFunctionArgs['context']['storefront'];
+  storefront: AppStorefrontClient;
   /** A Remix Request object */
   request: Request;
   /** A function that produces a canonical url for a resource. It is called multiple times for each locale supported by the app. */
@@ -104,11 +96,10 @@ export async function getSitemap(options: GetSiteMapOptions) {
 
   if (!query) throw new Response('Not found', {status: 404});
 
-  const data = await storefront.query(query, {
+  const {data} = await storefront.graphql(query, {
     variables: {
       page: parseInt(params.page, 10),
     },
-    storefrontApiVersion: 'unstable',
   });
 
   if (!data?.sitemap?.resources?.items?.length) {
@@ -274,7 +265,7 @@ const BLOG_SITEMAP_QUERY = `#graphql
 
 const METAOBJECT_SITEMAP_QUERY = `#graphql
     query SitemapMetaobjects($page: Int!) {
-      sitemap(type: METAOBJECT_PAGE) {
+      sitemap(type: METAOBJECT) {
         resources(page: $page) {
           items {
             handle
@@ -315,7 +306,7 @@ query SitemapIndex {
       count
     }
   }
-  metaObjects: sitemap(type: METAOBJECT_PAGE) {
+  metaObjects: sitemap(type: METAOBJECT) {
     pagesCount {
       count
     }

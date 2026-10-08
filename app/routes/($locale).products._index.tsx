@@ -1,15 +1,7 @@
-import {
-  json,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
+import {useLoaderData} from 'react-router';
 import invariant from 'tiny-invariant';
-import {
-  Pagination,
-  getPaginationVariables,
-  getSeoMeta,
-} from '@shopify/hydrogen';
+
+import type {Route} from './+types/($locale).products._index';
 
 import {PageHeader, Section} from '~/components/Text';
 import {ProductCard} from '~/components/ProductCard';
@@ -17,24 +9,21 @@ import {Grid} from '~/components/Grid';
 import {PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
 import {getImageLoadingPriority} from '~/lib/const';
 import {seoPayload} from '~/lib/seo.server';
+import {getSeoMeta} from '~/lib/seo-meta';
+import {Pagination, getPaginationVariables} from '~/lib/pagination';
 import {routeHeaders} from '~/data/cache';
+import {storefrontClientContext} from '~/lib/storefront';
 
 const PAGE_BY = 8;
 
 export const headers = routeHeaders;
 
-export async function loader({
-  request,
-  context: {storefront},
-}: LoaderFunctionArgs) {
+export async function loader({request, context}: Route.LoaderArgs) {
+  const storefrontClient = context.get(storefrontClientContext);
   const variables = getPaginationVariables(request, {pageBy: PAGE_BY});
 
-  const data = await storefront.query(ALL_PRODUCTS_QUERY, {
-    variables: {
-      ...variables,
-      country: storefront.i18n.country,
-      language: storefront.i18n.language,
-    },
+  const {data} = await storefrontClient.graphql(ALL_PRODUCTS_QUERY, {
+    variables,
   });
 
   invariant(data, 'No data returned from Shopify API');
@@ -57,14 +46,14 @@ export async function loader({
     },
   });
 
-  return json({
+  return {
     products: data.products,
     seo,
-  });
+  };
 }
 
-export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+export const meta: Route.MetaFunction = ({matches}) => {
+  return getSeoMeta(...matches.map((match) => (match?.data as any)?.seo));
 };
 
 export default function AllProducts() {

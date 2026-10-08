@@ -1,4 +1,10 @@
-import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import {redirect} from 'react-router';
+import {cartQueries, createCartCookie, getCartId} from '@shopify/hydrogen';
+
+import type {Route} from './+types/($locale).discount.$code';
+
+import {getSafeRedirectPath} from '~/lib/redirect';
+import {storefrontClientContext} from '~/lib/storefront';
 
 /**
  * Automatically applies a discount found on the url
@@ -12,39 +18,60 @@ import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
  * ```
  * @preserve
  */
-export async function loader({request, context, params}: LoaderFunctionArgs) {
-  const {cart} = context;
-  // N.B. This route will probably be removed in the future.
-  const session = context.session as any;
+export async function loader({request, context, params}: Route.LoaderArgs) {
+  const storefrontClient = context.get(storefrontClientContext);
   const {code} = params;
 
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
-  let redirectParam =
-    searchParams.get('redirect') || searchParams.get('return_to') || '/';
-
-  if (redirectParam.includes('//')) {
-    // Avoid redirecting to external URLs to prevent phishing attacks
-    redirectParam = '/';
-  }
+  // Only same-origin paths are allowed, to prevent phishing via external redirects
+  const redirectPath = getSafeRedirectPath(
+    searchParams.get('redirect') || searchParams.get('return_to'),
+    request.url,
+  );
 
   searchParams.delete('redirect');
   searchParams.delete('return_to');
 
-  const redirectUrl = `${redirectParam}?${searchParams}`;
+  // Carry the remaining query params over to the redirect target
+  const target = new URL(redirectPath, url.origin);
+  for (const [key, value] of searchParams) {
+    target.searchParams.append(key, value);
+  }
+  const redirectUrl = `${target.pathname}${target.search}${target.hash}`;
 
   if (!code) {
     return redirect(redirectUrl);
   }
 
-  const result = await cart.updateDiscountCodes([code]);
-  const headers = cart.setCartId(result.cart.id);
+  const cartId = getCartId(request);
+
+  let updatedCartId: string | undefined;
+
+  if (cartId) {
+    const {data} = await storefrontClient.graphql(
+      cartQueries.cartDiscountCodesUpdate,
+      {
+        variables: {cartId, discountCodes: [code]},
+      },
+    );
+    updatedCartId = data?.cartDiscountCodesUpdate?.cart?.id;
+  } else {
+    const {data} = await storefrontClient.graphql(cartQueries.cartCreate, {
+      variables: {input: {discountCodes: [code]}},
+    });
+    updatedCartId = data?.cartCreate?.cart?.id;
+  }
+
+  if (!updatedCartId) {
+    return redirect(redirectUrl);
+  }
 
   // Using set-cookie on a 303 redirect will not work if the domain origin have port number (:3000)
   // If there is no cart id and a new cart id is created in the progress, it will not be set in the cookie
   // on localhost:3000
   return redirect(redirectUrl, {
     status: 303,
-    headers,
+    headers: {'Set-Cookie': createCartCookie(updatedCartId)},
   });
 }

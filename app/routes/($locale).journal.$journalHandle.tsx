@@ -1,18 +1,17 @@
-import {
-  json,
-  type MetaArgs,
-  type LinksFunction,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData} from '@remix-run/react';
-import {getSeoMeta, Image} from '@shopify/hydrogen';
+import {useLoaderData, type LinksFunction} from 'react-router';
 import invariant from 'tiny-invariant';
 
-import {PageHeader, Section} from '~/components/Text';
-import {seoPayload} from '~/lib/seo.server';
-import {routeHeaders} from '~/data/cache';
-
 import styles from '../styles/custom-font.css?url';
+
+import type {Route} from './+types/($locale).journal.$journalHandle';
+
+import {PageHeader, Section} from '~/components/Text';
+import {Image} from '~/components/Image';
+import {seoPayload} from '~/lib/seo.server';
+import {getSeoMeta} from '~/lib/seo-meta';
+import {getLocaleFromRequest} from '~/lib/i18n';
+import {routeHeaders} from '~/data/cache';
+import {storefrontClientContext} from '~/lib/storefront';
 
 const BLOG_HANDLE = 'journal';
 
@@ -22,24 +21,24 @@ export const links: LinksFunction = () => {
   return [{rel: 'stylesheet', href: styles}];
 };
 
-export async function loader({request, params, context}: LoaderFunctionArgs) {
-  const {language, country} = context.storefront.i18n;
+export async function loader({request, params, context}: Route.LoaderArgs) {
+  const storefrontClient = context.get(storefrontClientContext);
+  const {language, country} = getLocaleFromRequest(request);
 
   invariant(params.journalHandle, 'Missing journal handle');
 
-  const {blog} = await context.storefront.query(ARTICLE_QUERY, {
+  const {data} = await storefrontClient.graphql(ARTICLE_QUERY, {
     variables: {
       blogHandle: BLOG_HANDLE,
       articleHandle: params.journalHandle,
-      language,
     },
   });
 
-  if (!blog?.articleByHandle) {
+  if (!data?.blog?.articleByHandle) {
     throw new Response(null, {status: 404});
   }
 
-  const article = blog.articleByHandle;
+  const article = data.blog.articleByHandle;
 
   const formattedDate = new Intl.DateTimeFormat(`${language}-${country}`, {
     year: 'numeric',
@@ -49,11 +48,11 @@ export async function loader({request, params, context}: LoaderFunctionArgs) {
 
   const seo = seoPayload.article({article, url: request.url});
 
-  return json({article, formattedDate, seo});
+  return {article, formattedDate, seo};
 }
 
-export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+export const meta: Route.MetaFunction = ({matches}) => {
+  return getSeoMeta(...matches.map((match) => (match?.data as any)?.seo));
 };
 
 export default function Article() {

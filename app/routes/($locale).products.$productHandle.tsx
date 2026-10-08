@@ -1,93 +1,84 @@
-import {useRef, Suspense} from 'react';
+import {useEffect, useRef, Suspense} from 'react';
 import {Disclosure, Listbox} from '@headlessui/react';
+import {Await, useLoaderData, useLocation, useNavigate} from 'react-router';
 import {
-  defer,
-  type MetaArgs,
-  type LoaderFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {useLoaderData, Await} from '@remix-run/react';
-import {
-  getSeoMeta,
-  Money,
-  ShopPayButton,
+  buildProductSelectionSearchParams,
+  canAddToCart,
   getSelectedProductOptions,
-  Analytics,
-  useOptimisticVariant,
-  getAdjacentAndFirstAvailableVariants,
-  useSelectedOptionInUrlParam,
-  getProductOptions,
-  type MappedProductOptions,
 } from '@shopify/hydrogen';
+import {ShopPayButton} from '@shopify/hydrogen/react';
 import invariant from 'tiny-invariant';
 import clsx from 'clsx';
-import type {
-  Maybe,
-  ProductOptionValueSwatch,
-} from '@shopify/hydrogen/storefront-api-types';
 
-import type {ProductFragment} from 'storefrontapi.generated';
+import type {Route} from './+types/($locale).products.$productHandle';
+
 import {Heading, Section, Text} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {Button} from '~/components/Button';
-import {AddToCartButton} from '~/components/AddToCartButton';
+import {Money} from '~/components/Money';
 import {Skeleton} from '~/components/Skeleton';
 import {ProductSwimlane} from '~/components/ProductSwimlane';
 import {ProductGallery} from '~/components/ProductGallery';
 import {IconCaret, IconCheck, IconClose} from '~/components/Icon';
-import {getExcerpt} from '~/lib/utils';
+import {getExcerpt, usePrefixPathWithLocale} from '~/lib/utils';
 import {seoPayload} from '~/lib/seo.server';
-import type {Storefront} from '~/lib/type';
+import {getSeoMeta} from '~/lib/seo-meta';
 import {routeHeaders} from '~/data/cache';
 import {MEDIA_FRAGMENT, PRODUCT_CARD_FRAGMENT} from '~/data/fragments';
+import {
+  storefrontClientContext,
+  type AppStorefrontClient,
+} from '~/lib/storefront';
+import {
+  ProductProvider,
+  useProductForm,
+  type ProductData,
+  type ProductVariantData,
+} from '~/lib/product';
+import {openCartDrawer} from '~/lib/cart-drawer';
+import {AnalyticsEvent, getAnalytics} from '~/lib/analytics';
 
 export const headers = routeHeaders;
 
-export async function loader(args: LoaderFunctionArgs) {
-  const {productHandle} = args.params;
-  invariant(productHandle, 'Missing productHandle param, check route filename');
-
-  // Start fetching non-critical data without blocking time to first byte
-  const deferredData = loadDeferredData(args);
-
-  // Await the critical data required to render initial state of the page
-  const criticalData = await loadCriticalData(args);
-
-  return defer({...deferredData, ...criticalData});
-}
-
-/**
- * Load data necessary for rendering content above the fold. This is the critical data
- * needed to render the page. If it's unavailable, the whole page should 400 or 500 error.
- */
-async function loadCriticalData({
-  params,
-  request,
-  context,
-}: LoaderFunctionArgs) {
+export async function loader({params, request, context}: Route.LoaderArgs) {
   const {productHandle} = params;
   invariant(productHandle, 'Missing productHandle param, check route filename');
 
-  const selectedOptions = getSelectedProductOptions(request);
+  const storefrontClient = context.get(storefrontClientContext);
+  const selectedOptions = getSelectedProductOptions({
+    searchParams: new URL(request.url).searchParams,
+  });
 
-  const [{shop, product}] = await Promise.all([
-    context.storefront.query(PRODUCT_QUERY, {
-      variables: {
-        handle: productHandle,
-        selectedOptions,
-        country: context.storefront.i18n.country,
-        language: context.storefront.i18n.language,
-      },
-    }),
-    // Add other queries here, so that they are loaded in parallel
-  ]);
+  const {data} = await storefrontClient.graphql(PRODUCT_QUERY, {
+    variables: {
+      handle: productHandle,
+      selectedOptions,
+    },
+  });
 
-  if (!product?.id) {
+  invariant(data, 'No data returned from Shopify API');
+
+  if (!data.product?.id) {
     throw new Response('product', {status: 404});
   }
 
-  const recommended = getRecommendedProducts(context.storefront, product.id);
+  const product = {
+    ...data.product,
+    selectedOrFirstAvailableVariant:
+      data.product.selectedOrFirstAvailableVariant ?? null,
+  };
+  const {shop} = data;
+
+  const recommended = getRecommendedProducts(
+    storefrontClient,
+    product.id,
+  ).catch((error) => {
+    console.error(error);
+    return null;
+  });
+
+  const variants = getAllProductVariants(product);
   const selectedVariant = product.selectedOrFirstAvailableVariant ?? {};
-  const variants = getAdjacentAndFirstAvailableVariants(product);
 
   const seo = seoPayload.product({
     product: {...product, variants},
@@ -97,54 +88,57 @@ async function loadCriticalData({
 
   return {
     product,
-    variants,
     shop,
-    storeDomain: shop.primaryDomain.url,
     recommended,
     seo,
   };
 }
 
-/**
- * Load data for rendering content below the fold. This data is deferred and will be
- * fetched after the initial page load. If it's unavailable, the page should still 200.
- * Make sure to not throw any errors here, as it will cause the page to 500.
- */
-function loadDeferredData(args: LoaderFunctionArgs) {
-  // Put any API calls that are not critical to be available on first page render
-  // For example: product reviews, product recommendations, social feeds.
+function getAllProductVariants(product: ProductData) {
+  const variants = [
+    product.selectedOrFirstAvailableVariant,
+    ...product.adjacentVariants,
+    ...product.options.flatMap((option) =>
+      option.optionValues.map((value) => value.firstSelectableVariant),
+    ),
+  ].filter((variant): variant is ProductVariantData => Boolean(variant));
 
-  return {};
+  return variants.filter(
+    (variant, index, array) =>
+      array.findIndex((otherVariant) => otherVariant.id === variant.id) ===
+      index,
+  );
 }
 
-export const meta = ({matches}: MetaArgs<typeof loader>) => {
-  return getSeoMeta(...matches.map((match) => (match.data as any).seo));
+export const meta: Route.MetaFunction = ({matches}) => {
+  return getSeoMeta(...matches.map((match) => (match?.data as any)?.seo));
 };
 
 export default function Product() {
-  const {product, shop, recommended, variants, storeDomain} =
-    useLoaderData<typeof loader>();
+  const {product, shop, recommended} = useLoaderData<typeof loader>();
   const {media, title, vendor, descriptionHtml} = product;
   const {shippingPolicy, refundPolicy} = shop;
-
-  // Optimistically selects a variant with given available variant information
-  const selectedVariant = useOptimisticVariant(
-    product.selectedOrFirstAvailableVariant,
-    variants,
-  );
-
-  // Sets the search param to the selected variant without navigation
-  // only when no search params are set in the url
-  useSelectedOptionInUrlParam(selectedVariant.selectedOptions);
-
-  // Get the product options array
-  const productOptions = getProductOptions({
-    ...product,
-    selectedOrFirstAvailableVariant: selectedVariant,
-  });
+  const navigate = useNavigate();
+  const location = useLocation();
+  const productsPath = usePrefixPathWithLocale('/products');
 
   return (
-    <>
+    <ProductProvider
+      product={product}
+      onSelect={(result) => {
+        const search = buildProductSelectionSearchParams({
+          selectedOptions: result.selectedOptions,
+          optionNames: product.options.map((option) => option.name),
+          base: new URLSearchParams(location.search),
+        }).toString();
+        const currentSearch = new URLSearchParams(location.search).toString();
+        if (search === currentSearch) return;
+        void navigate(
+          `${productsPath}/${product.handle}${search ? `?${search}` : ''}`,
+          {replace: true, preventScrollReset: true},
+        );
+      }}
+    >
       <Section className="px-0 md:px-8 lg:px-12">
         <div className="grid items-start md:gap-6 lg:gap-20 md:grid-cols-2 lg:grid-cols-3">
           <ProductGallery
@@ -161,11 +155,7 @@ export default function Product() {
                   <Text className={'opacity-50 font-medium'}>{vendor}</Text>
                 )}
               </div>
-              <ProductForm
-                productOptions={productOptions}
-                selectedVariant={selectedVariant}
-                storeDomain={storeDomain}
-              />
+              <ProductForm product={product} />
               <div className="grid gap-4 py-4">
                 {descriptionHtml && (
                   <ProductDetail
@@ -197,40 +187,65 @@ export default function Product() {
           errorElement="There was a problem loading related products"
           resolve={recommended}
         >
-          {(products) => (
-            <ProductSwimlane title="Related Products" products={products} />
-          )}
+          {(products) =>
+            products ? (
+              <ProductSwimlane title="Related Products" products={products} />
+            ) : null
+          }
         </Await>
       </Suspense>
-      <Analytics.ProductView
-        data={{
-          products: [
-            {
-              id: product.id,
-              title: product.title,
-              price: selectedVariant?.price.amount || '0',
-              vendor: product.vendor,
-              variantId: selectedVariant?.id || '',
-              variantTitle: selectedVariant?.title || '',
-              quantity: 1,
-            },
-          ],
-        }}
-      />
-    </>
+      <ProductViewTracker product={product} />
+    </ProductProvider>
   );
 }
 
-export function ProductForm({
-  productOptions,
-  selectedVariant,
-  storeDomain,
-}: {
-  productOptions: MappedProductOptions[];
-  selectedVariant: ProductFragment['selectedOrFirstAvailableVariant'];
-  storeDomain: string;
-}) {
+function ProductViewTracker({product}: {product: ProductData}) {
+  const lastPublishedId = useRef<string | null>(null);
+  const selectedVariant = product.selectedOrFirstAvailableVariant;
+
+  useEffect(() => {
+    if (lastPublishedId.current === product.id) return;
+    lastPublishedId.current = product.id;
+    getAnalytics()?.publish(AnalyticsEvent.PRODUCT_VIEWED, {
+      products: [
+        {
+          id: product.id,
+          title: product.title,
+          price: selectedVariant?.price.amount || '0',
+          vendor: product.vendor,
+          variantId: selectedVariant?.id || '',
+          variantTitle: selectedVariant?.title || '',
+          quantity: 1,
+        },
+      ],
+      url: window.location.href,
+    });
+  }, [product, selectedVariant]);
+
+  return null;
+}
+
+export function ProductForm({product}: {product: ProductData}) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const location = useLocation();
+  const {options, selectedVariant, register, formProps, errors, pending} =
+    useProductForm();
+
+  const addable = canAddToCart(product, options);
+  const hidePicker = options.every((option) => option.values.length <= 1);
+  const optionNames = product.options.map((option) => option.name);
+
+  const optionValueUrl = (value: {
+    selectedOptions: readonly {name: string; value: string}[];
+    handle: string;
+  }) => {
+    const search = buildProductSelectionSearchParams({
+      selectedOptions: value.selectedOptions,
+      optionNames,
+      base: new URLSearchParams(location.search),
+    }).toString();
+    return `/products/${value.handle}${search ? `?${search}` : ''}`;
+  };
 
   const isOutOfStock = !selectedVariant?.availableForSale;
 
@@ -242,136 +257,168 @@ export function ProductForm({
   return (
     <div className="grid gap-10">
       <div className="grid gap-4">
-        {productOptions.map((option, optionIndex) => (
-          <div
-            key={option.name}
-            className="product-options flex flex-col flex-wrap mb-4 gap-y-2 last:mb-0"
-          >
-            <Heading as="legend" size="lead" className="min-w-[4rem]">
-              {option.name}
-            </Heading>
-            <div className="flex flex-wrap items-baseline gap-4">
-              {option.optionValues.length > 7 ? (
-                <div className="relative w-full">
-                  <Listbox>
-                    {({open}) => (
-                      <>
-                        <Listbox.Button
-                          ref={closeRef}
-                          className={clsx(
-                            'flex items-center justify-between w-full py-3 px-4 border border-primary',
-                            open
-                              ? 'rounded-b md:rounded-t md:rounded-b-none'
-                              : 'rounded',
-                          )}
-                        >
-                          <span>
-                            {
-                              selectedVariant?.selectedOptions[optionIndex]
-                                .value
-                            }
-                          </span>
-                          <IconCaret direction={open ? 'up' : 'down'} />
-                        </Listbox.Button>
-                        <Listbox.Options
-                          className={clsx(
-                            'border-primary bg-contrast absolute bottom-12 z-30 grid h-48 w-full overflow-y-scroll rounded-t border px-2 py-2 transition-[max-height] duration-150 sm:bottom-auto md:rounded-b md:rounded-t-none md:border-t-0 md:border-b',
-                            open ? 'max-h-48' : 'max-h-0',
-                          )}
-                        >
-                          {option.optionValues
-                            .filter((value) => value.available)
-                            .map(
-                              ({
-                                isDifferentProduct,
-                                name,
-                                variantUriQuery,
-                                handle,
-                                selected,
-                              }) => (
-                                <Listbox.Option
-                                  key={`option-${option.name}-${name}`}
-                                  value={name}
-                                >
-                                  <Link
-                                    {...(!isDifferentProduct
-                                      ? {rel: 'nofollow'}
-                                      : {})}
-                                    to={`/products/${handle}?${variantUriQuery}`}
-                                    preventScrollReset
-                                    className={clsx(
-                                      'text-primary w-full p-2 transition rounded flex justify-start items-center text-left cursor-pointer',
-                                      selected && 'bg-primary/10',
-                                    )}
-                                    onClick={() => {
-                                      if (!closeRef?.current) return;
-                                      closeRef.current.click();
-                                    }}
-                                  >
-                                    {name}
-                                    {selected && (
-                                      <span className="ml-2">
-                                        <IconCheck />
-                                      </span>
-                                    )}
-                                  </Link>
-                                </Listbox.Option>
-                              ),
+        {!hidePicker &&
+          options.map((option, optionIndex) => (
+            <div
+              key={option.name}
+              className="product-options flex flex-col flex-wrap mb-4 gap-y-2 last:mb-0"
+            >
+              <Heading as="legend" size="lead" className="min-w-[4rem]">
+                {option.name}
+              </Heading>
+              <div className="flex flex-wrap items-baseline gap-4">
+                {option.values.length > 7 ? (
+                  <div className="relative w-full">
+                    <Listbox>
+                      {({open}) => (
+                        <>
+                          <Listbox.Button
+                            ref={closeRef}
+                            className={clsx(
+                              'flex items-center justify-between w-full py-3 px-4 border border-primary',
+                              open
+                                ? 'rounded-b md:rounded-t md:rounded-b-none'
+                                : 'rounded',
                             )}
-                        </Listbox.Options>
-                      </>
-                    )}
-                  </Listbox>
-                </div>
-              ) : (
-                option.optionValues.map(
-                  ({
-                    isDifferentProduct,
-                    name,
-                    variantUriQuery,
-                    handle,
-                    selected,
-                    available,
-                    swatch,
-                  }) => (
-                    <Link
-                      key={option.name + name}
-                      {...(!isDifferentProduct ? {rel: 'nofollow'} : {})}
-                      to={`/products/${handle}?${variantUriQuery}`}
-                      preventScrollReset
-                      prefetch="intent"
-                      replace
-                      className={clsx(
-                        'leading-none py-1 border-b-[1.5px] cursor-pointer transition-all duration-200',
-                        selected ? 'border-primary/50' : 'border-primary/0',
-                        available ? 'opacity-100' : 'opacity-50',
+                          >
+                            <span>
+                              {
+                                selectedVariant?.selectedOptions[optionIndex]
+                                  ?.value
+                              }
+                            </span>
+                            <IconCaret direction={open ? 'up' : 'down'} />
+                          </Listbox.Button>
+                          <Listbox.Options
+                            className={clsx(
+                              'border-primary bg-contrast absolute bottom-12 z-30 grid h-48 w-full overflow-y-scroll rounded-t border px-2 py-2 transition-[max-height] duration-150 sm:bottom-auto md:rounded-b md:rounded-t-none md:border-t-0 md:border-b',
+                              open ? 'max-h-48' : 'max-h-0',
+                            )}
+                          >
+                            {option.values
+                              .filter((value) => value.available)
+                              .map((value) => {
+                                const isDifferentProduct =
+                                  value.handle !== product.handle;
+                                const registered = isDifferentProduct
+                                  ? null
+                                  : register('optionValue', {
+                                      optionName: option.name,
+                                      value: value.name,
+                                    });
+
+                                return (
+                                  <Listbox.Option
+                                    key={`option-${option.name}-${value.name}`}
+                                    value={value.name}
+                                  >
+                                    <Link
+                                      {...(registered
+                                        ? {rel: 'nofollow', ...registered}
+                                        : {})}
+                                      to={optionValueUrl(value)}
+                                      preventScrollReset
+                                      aria-current={
+                                        value.selected ? 'true' : undefined
+                                      }
+                                      className={clsx(
+                                        'text-primary w-full p-2 transition rounded flex justify-start items-center text-left cursor-pointer',
+                                        value.selected && 'bg-primary/10',
+                                      )}
+                                      onClick={() => {
+                                        registered?.onClick?.();
+                                        if (!closeRef?.current) return;
+                                        closeRef.current.click();
+                                      }}
+                                    >
+                                      {value.name}
+                                      {value.selected && (
+                                        <span className="ml-2">
+                                          <IconCheck />
+                                        </span>
+                                      )}
+                                    </Link>
+                                  </Listbox.Option>
+                                );
+                              })}
+                          </Listbox.Options>
+                        </>
                       )}
-                    >
-                      <ProductOptionSwatch swatch={swatch} name={name} />
-                    </Link>
-                  ),
-                )
-              )}
+                    </Listbox>
+                  </div>
+                ) : (
+                  option.values.map((value) => {
+                    const isDifferentProduct = value.handle !== product.handle;
+                    const valueClassName = clsx(
+                      'leading-none py-1 border-b-[1.5px] cursor-pointer transition-all duration-200',
+                      value.selected ? 'border-primary/50' : 'border-primary/0',
+                      value.available ? 'opacity-100' : 'opacity-50',
+                    );
+
+                    if (!value.exists) {
+                      return (
+                        <button
+                          key={option.name + value.name}
+                          type="button"
+                          disabled
+                          aria-pressed={value.selected}
+                          className={clsx(valueClassName, 'opacity-20')}
+                        >
+                          <ProductOptionSwatch
+                            swatch={value.swatch}
+                            name={value.name}
+                          />
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <Link
+                        key={option.name + value.name}
+                        {...(!isDifferentProduct
+                          ? {
+                              rel: 'nofollow',
+                              ...register('optionValue', {
+                                optionName: option.name,
+                                value: value.name,
+                              }),
+                            }
+                          : {})}
+                        to={optionValueUrl(value)}
+                        preventScrollReset
+                        prefetch="intent"
+                        replace
+                        aria-current={value.selected ? 'true' : undefined}
+                        data-available={value.available ? 'true' : 'false'}
+                        className={valueClassName}
+                      >
+                        <ProductOptionSwatch
+                          swatch={value.swatch}
+                          name={value.name}
+                        />
+                        {!value.available ? (
+                          <span className="sr-only"> (Sold out)</span>
+                        ) : null}
+                      </Link>
+                    );
+                  })
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-        {selectedVariant && (
-          <div className="grid items-stretch gap-4">
-            {isOutOfStock ? (
-              <Button variant="secondary" disabled>
-                <Text>Sold out</Text>
-              </Button>
-            ) : (
-              <AddToCartButton
-                lines={[
-                  {
-                    merchandiseId: selectedVariant.id!,
-                    quantity: 1,
-                  },
-                ]}
-                variant="primary"
-                data-test="add-to-cart"
-              >
+          ))}
+        <div className="grid items-stretch gap-4">
+          <form {...formProps({beforeSubmit: openCartDrawer})}>
+            <input type="hidden" {...register('merchandiseId', {})} />
+            <input type="hidden" {...register('quantity', {value: 1})} />
+            <Button
+              as="button"
+              width="full"
+              variant={addable ? 'primary' : 'secondary'}
+              disabled={!addable || pending}
+              data-test="add-to-cart"
+              {...register('addToCart', {})}
+            >
+              {addable ? (
                 <Text
                   as="span"
                   className="flex items-center justify-center gap-2"
@@ -392,17 +439,38 @@ export function ProductForm({
                     />
                   )}
                 </Text>
-              </AddToCartButton>
-            )}
-            {!isOutOfStock && (
-              <ShopPayButton
-                width="100%"
-                variantIds={[selectedVariant?.id!]}
-                storeDomain={storeDomain}
-              />
-            )}
-          </div>
-        )}
+              ) : (
+                <Text as="span">
+                  {!selectedVariant
+                    ? 'Select options'
+                    : isOutOfStock
+                    ? 'Sold out'
+                    : 'Unavailable'}
+                </Text>
+              )}
+            </Button>
+          </form>
+          {selectedVariant ? (
+            <ShopPayButton
+              variants={[{id: selectedVariant.id, quantity: 1}]}
+              disabled={!addable || pending}
+              width="100%"
+            />
+          ) : null}
+          {errors?.userErrors?.length ? (
+            <Text className="text-red-500">
+              {errors.userErrors
+                .map((error) => error.message)
+                .filter(Boolean)
+                .join(' ')}
+            </Text>
+          ) : null}
+          {errors?.networkErrors?.length ? (
+            <Text className="text-red-500">
+              Something went wrong. Please try again.
+            </Text>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -412,7 +480,7 @@ function ProductOptionSwatch({
   swatch,
   name,
 }: {
-  swatch?: Maybe<ProductOptionValueSwatch> | undefined;
+  swatch?: ProductData['options'][number]['optionValues'][number]['swatch'];
   name: string;
 }) {
   const image = swatch?.image?.previewImage?.url;
@@ -613,17 +681,17 @@ const RECOMMENDED_PRODUCTS_QUERY = `#graphql
 ` as const;
 
 async function getRecommendedProducts(
-  storefront: Storefront,
+  storefrontClient: AppStorefrontClient,
   productId: string,
 ) {
-  const products = await storefront.query(RECOMMENDED_PRODUCTS_QUERY, {
+  const {data} = await storefrontClient.graphql(RECOMMENDED_PRODUCTS_QUERY, {
     variables: {productId, count: 12},
   });
 
-  invariant(products, 'No data returned from Shopify API');
+  invariant(data, 'No data returned from Shopify API');
 
-  const mergedProducts = (products.recommended ?? [])
-    .concat(products.additional.nodes)
+  const mergedProducts = (data.recommended ?? [])
+    .concat(data.additional.nodes)
     .filter(
       (value, index, array) =>
         array.findIndex((value2) => value2.id === value.id) === index,

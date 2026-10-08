@@ -1,11 +1,11 @@
-import {CartForm, type OptimisticCartLineInput} from '@shopify/hydrogen';
-import type {FetcherWithComponents} from '@remix-run/react';
-
 import {Button} from '~/components/Button';
+import {useCartForm} from '~/lib/cart';
+import {openCartDrawer} from '~/lib/cart-drawer';
 
 export function AddToCartButton({
   children,
-  lines,
+  merchandiseId,
+  quantity = 1,
   className = '',
   variant = 'primary',
   width = 'full',
@@ -13,38 +13,35 @@ export function AddToCartButton({
   ...props
 }: {
   children: React.ReactNode;
-  lines: Array<OptimisticCartLineInput>;
+  merchandiseId: string;
+  quantity?: number;
   className?: string;
   variant?: 'primary' | 'secondary' | 'inline';
   width?: 'auto' | 'full';
   disabled?: boolean;
   [key: string]: any;
 }) {
+  const {formProps, register} = useCartForm();
+
   return (
-    <CartForm
-      route="/cart"
-      inputs={{
-        lines,
-      }}
-      action={CartForm.ACTIONS.LinesAdd}
-    >
-      {(fetcher: FetcherWithComponents<any>) => {
-        return (
-          <>
-            <Button
-              as="button"
-              type="submit"
-              width={width}
-              variant={variant}
-              className={className}
-              disabled={disabled ?? fetcher.state !== 'idle'}
-              {...props}
-            >
-              {children}
-            </Button>
-          </>
-        );
-      }}
-    </CartForm>
+    <form {...formProps({beforeSubmit: openCartDrawer})}>
+      <input
+        type="hidden"
+        {...register('merchandiseId', {value: merchandiseId})}
+      />
+      <input type="hidden" {...register('quantity', {value: quantity})} />
+      <Button
+        as="button"
+        type="submit"
+        width={width}
+        variant={variant}
+        className={className}
+        disabled={disabled}
+        {...register('add')}
+        {...props}
+      >
+        {children}
+      </Button>
+    </form>
   );
 }

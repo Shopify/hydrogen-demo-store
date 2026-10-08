@@ -1,11 +1,11 @@
 import {useEffect} from 'react';
-import {useFetcher} from '@remix-run/react';
-
-import {usePrefixPathWithLocale} from '~/lib/utils';
-import type {FeaturedData} from '~/routes/($locale).featured-products';
+import {useFetcher} from 'react-router';
 
 import {FeaturedCollections} from './FeaturedCollections';
 import {ProductSwimlane} from './ProductSwimlane';
+
+import {usePrefixPathWithLocale} from '~/lib/utils';
+import type {FeaturedData} from '~/routes/($locale).featured-products';
 
 export function FeaturedSection() {
   const {load, data} = useFetcher<FeaturedData>();

@@ -1,19 +1,18 @@
 import {
-  json,
+  data,
   redirect,
-  type ActionFunction,
-  type AppLoadContext,
-} from '@shopify/remix-oxygen';
-import {
   Form,
   useActionData,
   useOutletContext,
   useParams,
   useNavigation,
-} from '@remix-run/react';
+} from 'react-router';
 import {flattenConnection} from '@shopify/hydrogen';
 import type {CustomerAddressInput} from '@shopify/hydrogen/customer-account-api-types';
 import invariant from 'tiny-invariant';
+
+import type {Route} from './+types/($locale).account.address.$id';
+import type {AccountOutletContext} from './($locale).account.edit';
 
 import {Button} from '~/components/Button';
 import {Text} from '~/components/Text';
@@ -23,9 +22,8 @@ import {
   DELETE_ADDRESS_MUTATION,
   CREATE_ADDRESS_MUTATION,
 } from '~/graphql/customer-account/CustomerAddressMutations';
-
-import {doLogout} from './($locale).account_.logout';
-import type {AccountOutletContext} from './($locale).account.edit';
+import {getAuthenticatedCustomerClient} from '~/lib/customer-account.server';
+import {getLocalePrefix} from '~/lib/redirect';
 
 interface ActionData {
   formError?: string;
@@ -35,38 +33,34 @@ export const handle = {
   renderInModal: true,
 };
 
-export const action: ActionFunction = async ({request, context, params}) => {
-  const {customerAccount} = context;
+export async function action({request, context, params}: Route.ActionArgs) {
   const formData = await request.formData();
 
-  // Double-check current user is logged in.
-  // Will throw a logout redirect if not.
-  if (!(await customerAccount.isLoggedIn())) {
-    throw await doLogout(context);
-  }
+  const {client, accessToken} = await getAuthenticatedCustomerClient(
+    request,
+    context,
+  );
 
   const addressId = formData.get('addressId');
   invariant(typeof addressId === 'string', 'You must provide an address id.');
 
   if (request.method === 'DELETE') {
     try {
-      const {data, errors} = await customerAccount.mutate(
+      const {data: mutationData, errors} = await client.graphql(
         DELETE_ADDRESS_MUTATION,
-        {variables: {addressId}},
+        {accessToken, variables: {addressId}},
       );
 
       invariant(!errors?.length, errors?.[0]?.message);
 
       invariant(
-        !data?.customerAddressUpdate?.userErrors?.length,
-        data?.customerAddressUpdate?.userErrors?.[0]?.message,
+        !mutationData?.customerAddressDelete?.userErrors?.length,
+        mutationData?.customerAddressDelete?.userErrors?.[0]?.message,
       );
 
-      return redirect(
-        params?.locale ? `${params?.locale}/account` : '/account',
-      );
+      return redirect(`${getLocalePrefix(params.locale)}/account`);
     } catch (error: any) {
-      return json(
+      return data(
         {formError: error.message},
         {
           status: 400,
@@ -103,28 +97,26 @@ export const action: ActionFunction = async ({request, context, params}) => {
 
   if (addressId === 'add') {
     try {
-      const {data, errors} = await customerAccount.mutate(
+      const {data: mutationData, errors} = await client.graphql(
         CREATE_ADDRESS_MUTATION,
-        {variables: {address, defaultAddress}},
+        {accessToken, variables: {address, defaultAddress}},
       );
 
       invariant(!errors?.length, errors?.[0]?.message);
 
       invariant(
-        !data?.customerAddressCreate?.userErrors?.length,
-        data?.customerAddressCreate?.userErrors?.[0]?.message,
+        !mutationData?.customerAddressCreate?.userErrors?.length,
+        mutationData?.customerAddressCreate?.userErrors?.[0]?.message,
       );
 
       invariant(
-        data?.customerAddressCreate?.customerAddress?.id,
+        mutationData?.customerAddressCreate?.customerAddress?.id,
         'Expected customer address to be created',
       );
 
-      return redirect(
-        params?.locale ? `${params?.locale}/account` : '/account',
-      );
+      return redirect(`${getLocalePrefix(params.locale)}/account`);
     } catch (error: any) {
-      return json(
+      return data(
         {formError: error.message},
         {
           status: 400,
@@ -133,9 +125,10 @@ export const action: ActionFunction = async ({request, context, params}) => {
     }
   } else {
     try {
-      const {data, errors} = await customerAccount.mutate(
+      const {data: mutationData, errors} = await client.graphql(
         UPDATE_ADDRESS_MUTATION,
         {
+          accessToken,
           variables: {
             address,
             addressId,
@@ -147,15 +140,13 @@ export const action: ActionFunction = async ({request, context, params}) => {
       invariant(!errors?.length, errors?.[0]?.message);
 
       invariant(
-        !data?.customerAddressUpdate?.userErrors?.length,
-        data?.customerAddressUpdate?.userErrors?.[0]?.message,
+        !mutationData?.customerAddressUpdate?.userErrors?.length,
+        mutationData?.customerAddressUpdate?.userErrors?.[0]?.message,
       );
 
-      return redirect(
-        params?.locale ? `${params?.locale}/account` : '/account',
-      );
+      return redirect(`${getLocalePrefix(params.locale)}/account`);
     } catch (error: any) {
-      return json(
+      return data(
         {formError: error.message},
         {
           status: 400,
@@ -163,7 +154,7 @@ export const action: ActionFunction = async ({request, context, params}) => {
       );
     }
   }
-};
+}
 
 export default function EditAddress() {
   const {id: addressId} = useParams();

@@ -1,5 +1,10 @@
 {
-  "include": ["./**/*.d.ts", "./**/*.ts", "./**/*.tsx"],
+  "include": [
+    "./**/*.d.ts",
+    "./**/*.ts",
+    "./**/*.tsx",
+    ".react-router/types/**/*"
+  ],
   "exclude": ["node_modules", "dist", "playwright.config.ts"],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
@@ -16,9 +21,11 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "types": ["@shopify/oxygen-workers-types"],
+    "plugins": [{"name": "@shopify/hydrogen/ts-plugin"}],
     "paths": {
       "~/*": ["app/*"]
     },
+    "rootDirs": [".", "./.react-router/types"],
     "noEmit": true
   }
 }

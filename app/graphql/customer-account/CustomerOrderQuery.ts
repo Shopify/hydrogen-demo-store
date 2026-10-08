@@ -1,5 +1,7 @@
+import {gql} from '@shopify/hydrogen/customer-account';
+
 // NOTE: https://shopify.dev/docs/api/customer/latest/queries/order
-export const CUSTOMER_ORDER_QUERY = `#graphql
+export const CUSTOMER_ORDER_QUERY = gql(`
   fragment OrderMoney on MoneyV2 {
     amount
     currencyCode
@@ -84,4 +86,4 @@ export const CUSTOMER_ORDER_QUERY = `#graphql
       }
     }
   }
-` as const;
+`);
