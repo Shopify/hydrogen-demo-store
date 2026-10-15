@@ -6,13 +6,14 @@ import {
   type ActionFunctionArgs,
 } from '@shopify/remix-oxygen';
 
+import {getLocalePrefix} from '~/lib/redirect';
+
 export async function doLogout(context: AppLoadContext) {
   return context.customerAccount.logout();
 }
 
 export async function loader({params}: LoaderFunctionArgs) {
-  const locale = params.locale;
-  return redirect(locale ? `/${locale}` : '/');
+  return redirect(getLocalePrefix(params.locale) || '/');
 }
 
 export const action: ActionFunction = async ({context}: ActionFunctionArgs) => {

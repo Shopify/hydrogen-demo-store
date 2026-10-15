@@ -23,6 +23,7 @@ import {
   DELETE_ADDRESS_MUTATION,
   CREATE_ADDRESS_MUTATION,
 } from '~/graphql/customer-account/CustomerAddressMutations';
+import {getLocalePrefix} from '~/lib/redirect';
 
 import {doLogout} from './($locale).account_.logout';
 import type {AccountOutletContext} from './($locale).account.edit';
@@ -62,9 +63,7 @@ export const action: ActionFunction = async ({request, context, params}) => {
         data?.customerAddressUpdate?.userErrors?.[0]?.message,
       );
 
-      return redirect(
-        params?.locale ? `${params?.locale}/account` : '/account',
-      );
+      return redirect(`${getLocalePrefix(params.locale)}/account`);
     } catch (error: any) {
       return json(
         {formError: error.message},
@@ -120,9 +119,7 @@ export const action: ActionFunction = async ({request, context, params}) => {
         'Expected customer address to be created',
       );
 
-      return redirect(
-        params?.locale ? `${params?.locale}/account` : '/account',
-      );
+      return redirect(`${getLocalePrefix(params.locale)}/account`);
     } catch (error: any) {
       return json(
         {formError: error.message},
@@ -151,9 +148,7 @@ export const action: ActionFunction = async ({request, context, params}) => {
         data?.customerAddressUpdate?.userErrors?.[0]?.message,
       );
 
-      return redirect(
-        params?.locale ? `${params?.locale}/account` : '/account',
-      );
+      return redirect(`${getLocalePrefix(params.locale)}/account`);
     } catch (error: any) {
       return json(
         {formError: error.message},

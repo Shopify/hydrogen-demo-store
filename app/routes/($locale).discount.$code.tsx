@@ -1,5 +1,7 @@
 import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 
+import {getSafeRedirectPath} from '~/lib/redirect';
+
 /**
  * Automatically applies a discount found on the url
  * If a cart exists it's updated with the discount, otherwise a cart is created with the discount already applied
@@ -20,18 +22,17 @@ export async function loader({request, context, params}: LoaderFunctionArgs) {
 
   const url = new URL(request.url);
   const searchParams = new URLSearchParams(url.search);
-  let redirectParam =
-    searchParams.get('redirect') || searchParams.get('return_to') || '/';
-
-  if (redirectParam.includes('//')) {
-    // Avoid redirecting to external URLs to prevent phishing attacks
-    redirectParam = '/';
-  }
+  // Only redirect within this store, to prevent phishing through open redirects.
+  const redirectParam = getSafeRedirectPath(
+    searchParams.get('redirect') || searchParams.get('return_to'),
+    request.url,
+  );
 
   searchParams.delete('redirect');
   searchParams.delete('return_to');
 
-  const redirectUrl = `${redirectParam}?${searchParams}`;
+  const query = searchParams.toString();
+  const redirectUrl = query ? `${redirectParam}?${query}` : redirectParam;
 
   if (!code) {
     return redirect(redirectUrl);
