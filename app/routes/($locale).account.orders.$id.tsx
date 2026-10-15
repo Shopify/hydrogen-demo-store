@@ -9,6 +9,7 @@ import {statusMessage} from '~/lib/utils';
 import {Link} from '~/components/Link';
 import {Heading, PageHeader, Text} from '~/components/Text';
 import {CUSTOMER_ORDER_QUERY} from '~/graphql/customer-account/CustomerOrderQuery';
+import {getLocalePrefix} from '~/lib/redirect';
 
 export const meta: MetaFunction<typeof loader> = ({data}) => {
   return [{title: `Order ${data?.order?.name}`}];
@@ -16,7 +17,7 @@ export const meta: MetaFunction<typeof loader> = ({data}) => {
 
 export async function loader({request, context, params}: LoaderFunctionArgs) {
   if (!params.id) {
-    return redirect(params?.locale ? `${params.locale}/account` : '/account');
+    return redirect(`${getLocalePrefix(params.locale)}/account`);
   }
 
   const queryParams = new URL(request.url).searchParams;

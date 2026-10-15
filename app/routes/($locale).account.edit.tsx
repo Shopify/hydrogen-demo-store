@@ -15,6 +15,7 @@ import {Button} from '~/components/Button';
 import {Text} from '~/components/Text';
 import {getInputStyleClasses} from '~/lib/utils';
 import {CUSTOMER_UPDATE_MUTATION} from '~/graphql/customer-account/CustomerUpdateMutation';
+import {getLocalePrefix} from '~/lib/redirect';
 
 import {doLogout} from './($locale).account_.logout';
 
@@ -80,7 +81,7 @@ export const action: ActionFunction = async ({request, context, params}) => {
       data?.customerUpdate?.userErrors?.[0]?.message,
     );
 
-    return redirect(params?.locale ? `${params.locale}/account` : '/account');
+    return redirect(`${getLocalePrefix(params.locale)}/account`);
   } catch (error: any) {
     return json(
       {formError: error?.message},

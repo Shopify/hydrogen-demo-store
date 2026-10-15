@@ -7,7 +7,7 @@ import {
 } from '@shopify/remix-oxygen';
 import {CartForm, type CartQueryDataReturn, Analytics} from '@shopify/hydrogen';
 
-import {isLocalPath} from '~/lib/utils';
+import {getSafeRedirectPath} from '~/lib/redirect';
 import {Cart} from '~/components/Cart';
 
 export async function action({request, context}: ActionFunctionArgs) {
@@ -59,8 +59,12 @@ export async function action({request, context}: ActionFunctionArgs) {
   const cartId = result.cart.id;
   const headers = cart.setCartId(result.cart.id);
 
-  const redirectTo = formData.get('redirectTo') ?? null;
-  if (typeof redirectTo === 'string' && isLocalPath(redirectTo)) {
+  const redirectTo = getSafeRedirectPath(
+    formData.get('redirectTo'),
+    request.url,
+    '',
+  );
+  if (redirectTo) {
     status = 303;
     headers.set('Location', redirectTo);
   }
