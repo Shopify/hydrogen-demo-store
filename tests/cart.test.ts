@@ -74,6 +74,7 @@ test.describe('Cart', () => {
     const priceInCheckout = await page
       .locator('[role=cell] > span')
       .getByText(/^\$\d/)
+      .first()
       .textContent();
 
     await expect(
