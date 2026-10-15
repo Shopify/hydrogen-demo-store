@@ -8,6 +8,7 @@ import {type LayoutQuery} from 'storefrontapi.generated';
 import {Text, Heading, Section} from '~/components/Text';
 import {Link} from '~/components/Link';
 import {Cart} from '~/components/Cart';
+import {getLocalePrefix} from '~/lib/redirect';
 import {CartLoading} from '~/components/CartLoading';
 import {Input} from '~/components/Input';
 import {Drawer, useDrawer} from '~/components/Drawer';
@@ -202,7 +203,7 @@ function MobileHeader({
         </button>
         <Form
           method="get"
-          action={params.locale ? `/${params.locale}/search` : '/search'}
+          action={`${getLocalePrefix(params.locale)}/search`}
           className="items-center gap-2 sm:flex"
         >
           <button
@@ -293,7 +294,7 @@ function DesktopHeader({
       <div className="flex items-center gap-1">
         <Form
           method="get"
-          action={params.locale ? `/${params.locale}/search` : '/search'}
+          action={`${getLocalePrefix(params.locale)}/search`}
           className="flex items-center gap-2"
         >
           <Input
